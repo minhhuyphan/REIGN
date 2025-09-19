@@ -94,6 +94,18 @@ class QuaiVat:
 
     def update(self, target=None):
         now = pygame.time.get_ticks()
+        
+        # Reset damaged flag chỉ khi player THỰC SỰ dừng tấn công
+        if target and hasattr(target, 'actioning') and hasattr(target, 'action_type'):
+            # Chỉ reset khi player không đang trong trạng thái action attack
+            if not target.actioning and target.action_type not in ["danh", "da"]:
+                self.damaged = False
+            # Hoặc khi player ở xa quá (không thể đánh trúng)
+            elif abs(self.x - target.x) > 120:
+                self.damaged = False
+        else:
+            # Không có target hoặc target không hợp lệ
+            self.damaged = False
 
         # --- Nếu đã chết ---
         if self.dead:
@@ -115,7 +127,6 @@ class QuaiVat:
                     self.attacking = False
                     self.state = "dung_yen"
                     self.frame = 0
-                    self.damaged = False  # reset để có thể trừ HP cho đòn tiếp theo
                 else:
                     self.image = self.animations[self.state][self.frame]
             return

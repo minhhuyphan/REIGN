@@ -20,25 +20,25 @@ class Level1Scene:
         
         # Thêm các lớp cảnh nền từ xa đến gần (tốc độ tăng dần từ 0 đến 1)
         # Lớp 1: Trăng/Bầu trời (ở xa nhất, gần như đứng yên)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/trang_sao.png", speed_factor=0.05, y_pos=0)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen//man1/trang_sao.png", speed_factor=0.05, y_pos=0)
         
         # Lớp 2: Mây (di chuyển rất chậm)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/may.png", speed_factor=0.1, y_pos=50)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/may.png", speed_factor=0.1, y_pos=50)
         
         # Lớp 3: Núi xa (di chuyển chậm)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/nui.png", speed_factor=0.2, y_pos=10, scale_factor=1.5)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/nui.png", speed_factor=0.2, y_pos=10, scale_factor=1.5)
         
         # Lớp 4: Cây xa (di chuyển nhanh hơn núi)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/cay_xa.png", speed_factor=0.4, y_pos=150, scale_factor=1.5)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/cay_xa.png", speed_factor=0.4, y_pos=150, scale_factor=1.5)
 
         # Lớp 5: Nhà (di chuyển gần bằng mặt đất)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/nha.png", speed_factor=0.6, y_pos=80, scale_factor=1.5)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/nha.png", speed_factor=0.6, y_pos=80, scale_factor=1.5)
 
         # Lớp 6: Mặt đất (di chuyển cùng tốc độ camera)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/mat_dat.png", speed_factor=1.0, y_pos=230, repeat_x=True)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/mat_dat.png", speed_factor=1.0, y_pos=230, repeat_x=True)
         
         # Lớp 7: Cây gần (phía trước nhân vật, di chuyển nhanh hơn camera)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/cay_gan.png", speed_factor=1.2, y_pos=400, scale_factor=1.5, above_player=True)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/cay_gan.png", speed_factor=1.2, y_pos=400, scale_factor=1.5, above_player=True)
 
         # Khởi tạo player
         folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat")
@@ -197,10 +197,11 @@ class Level1Scene:
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
                 rect_enemy = enemy.image.get_rect(topleft=(enemy.x, enemy.y))
                 if rect_player.colliderect(rect_enemy):
-                    if self.player.state == "danh" and not enemy.damaged:
+                    # Player chỉ gây damage khi THỰC SỰ đang tấn công (actioning = True)
+                    if self.player.state == "danh" and self.player.actioning and not enemy.damaged:
                         enemy.take_damage(self.player.damage, self.player.flip)
                         enemy.damaged = True
-                    elif self.player.state == "da" and not enemy.damaged:
+                    elif self.player.state == "da" and self.player.actioning and not enemy.damaged:
                         enemy.take_damage(self.player.kick_damage, self.player.flip)
                         enemy.damaged = True
 
@@ -212,10 +213,11 @@ class Level1Scene:
                 rect_boss = self.current_boss.image.get_rect(topleft=(self.current_boss.x, self.current_boss.y))
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
                 if rect_boss.colliderect(rect_player):
-                    if self.player.state == "danh" and not self.current_boss.damaged:
+                    # Player chỉ gây damage khi THỰC SỰ đang tấn công (actioning = True)
+                    if self.player.state == "danh" and self.player.actioning and not self.current_boss.damaged:
                         self.current_boss.take_damage(self.player.damage, self.player.flip)
                         self.current_boss.damaged = True
-                    elif self.player.state == "da" and not self.current_boss.damaged:
+                    elif self.player.state == "da" and self.player.actioning and not self.current_boss.damaged:
                         self.current_boss.take_damage(self.player.kick_damage, self.player.flip)
                         self.current_boss.damaged = True
 
@@ -224,7 +226,23 @@ class Level1Scene:
                         self.player.damaged = True
 
         else:
-            # Player chết
+            # Player chết - chuyển đến màn hình Game Over
+            if not hasattr(self, 'death_timer'):
+                self.death_timer = pygame.time.get_ticks()
+            
+            # Cho phép animation chết hoàn thành (2 giây)
+            current_time = pygame.time.get_ticks()
+            if current_time - self.death_timer > 2000:
+                # Tính điểm dựa trên số quái đã giết
+                score = (len(self.bosses) - len([b for b in self.bosses if not b.dead])) * 1000
+                if hasattr(self, 'initial_enemy_count'):
+                    score += (self.initial_enemy_count - len(self.normal_enemies)) * 100
+                
+                # Chuyển đến màn hình Game Over
+                self.game.game_over_scene = self.game.load_scene("game_over", "Level 1", score)
+                self.game.change_scene("game_over")
+                return
+            
             self.player.update(keys)
             if self.current_boss:
                 self.current_boss.state = "dung_yen"
