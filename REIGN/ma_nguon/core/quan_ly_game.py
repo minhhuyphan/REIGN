@@ -37,9 +37,24 @@ class Game:
         from ma_nguon.man_choi.loading import LoadingScene
         if scene_name == "exit":
             self.running = False
+        elif scene_name == "game_over":
+            # Chuyển trực tiếp đến Game Over mà không qua Loading
+            if hasattr(self, 'game_over_scene'):
+                self.current_scene = self.game_over_scene
+            else:
+                # Fallback nếu không có scene được tạo trước
+                from ma_nguon.man_choi.game_over import GameOverScene
+                self.current_scene = GameOverScene(self, "Unknown", 0)
         else:
             # Luôn dùng LoadingScene để chuyển tiếp
             self.current_scene = LoadingScene(self, scene_name)
+    
+    def load_scene(self, scene_name, level_name="Unknown", score=0):
+        """Tạo scene mới mà không chuyển đổi ngay lập tức"""
+        if scene_name == "game_over":
+            from ma_nguon.man_choi.game_over import GameOverScene
+            return GameOverScene(self, level_name, score)
+        return None
             
     def draw_player_health_bar(self, screen, player):
         """Vẽ thanh máu ở góc màn hình"""
