@@ -3,19 +3,28 @@ import os
 import sys
 import time
 import math
+import random
 
 class VictoryScene:
     def __init__(self, game):
         self.game = game
-        self.font_large = pygame.font.Font(None, 80)
-        self.font_medium = pygame.font.Font(None, 50)
-        self.font_small = pygame.font.Font(None, 30)
+        
+        # Sử dụng font tùy chỉnh nếu có, không thì dùng font mặc định
+        try:
+            self.font_large = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 80)
+            self.font_medium = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 50)
+            self.font_small = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 30)
+        except:
+            self.font_large = pygame.font.Font(None, 80)
+            self.font_medium = pygame.font.Font(None, 50)
+            self.font_small = pygame.font.Font(None, 30)
+            
         self.start_time = pygame.time.get_ticks()
         self.duration = 5000  # Hiển thị màn hình chiến thắng trong 5 giây
         
         # Load âm thanh chiến thắng nếu có
         try:
-            self.victory_sound = pygame.mixer.Sound("tai_nguyen/am_thanh/hieu_ung/da.mp3")
+            self.victory_sound = pygame.mixer.Sound("../Tai_nguyen/am_thanh/hieu_ung/da.mp3")
             self.victory_sound.play()
         except:
             self.victory_sound = None
@@ -25,15 +34,26 @@ class VictoryScene:
         self.animation_frame = 0
         self.animation_tick = 0
         self.stars = []
+        
+        # Tạo các ngôi sao hiệu ứng
         for i in range(50):
+            # Tạo vị trí ngẫu nhiên xung quanh trung tâm màn hình
+            center_x = self.game.WIDTH // 2
+            center_y = self.game.HEIGHT // 2
+            angle = random.uniform(0, 2 * math.pi)
+            distance = random.uniform(50, min(self.game.WIDTH, self.game.HEIGHT) // 3)
+            
+            x = center_x + math.cos(angle) * distance
+            y = center_y + math.sin(angle) * distance
+            
             self.stars.append({
-                'x': pygame.math.Vector2(pygame.math.Vector2(pygame.display.get_surface().get_size()) * pygame.math.Vector2(pygame.math.Vector2(pygame.math.Vector2(pygame.math.Vector2(pygame.math.Vector2.random()).normalize()))) * pygame.math.Vector2(pygame.math.Vector2(pygame.display.get_surface().get_size()).length() / 2)),
-                'speed': 2 + pygame.math.Vector2.random().x * 3,
-                'angle': pygame.math.Vector2.random().x * 360,
-                'size': 3 + pygame.math.Vector2.random().x * 5,
-                'color': (200 + pygame.math.Vector2.random().x * 55, 
-                          200 + pygame.math.Vector2.random().x * 55, 
-                          100 + pygame.math.Vector2.random().x * 155)
+                'x': pygame.math.Vector2(x, y),
+                'speed': 2 + random.uniform(0, 3),
+                'angle': random.uniform(0, 360),
+                'size': 3 + random.uniform(0, 5),
+                'color': (200 + random.randint(0, 55), 
+                          200 + random.randint(0, 55), 
+                          100 + random.randint(0, 155))
             })
 
     def handle_event(self, event):

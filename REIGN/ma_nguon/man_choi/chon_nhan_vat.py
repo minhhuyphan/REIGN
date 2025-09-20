@@ -1,35 +1,38 @@
 import pygame
 import os
-from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from doi_tuong.nhan_vat.nhan_vat import Character
 
 class CharacterSelectScene:
     def __init__(self, game):
         self.game = game
         self.screen_width = self.game.screen.get_width()
         self.screen_height = self.game.screen.get_height()
-        self.font_big = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 60)
-        self.font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 50)
-        self.font_small = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 30)
+        self.font_big = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 60)
+        self.font = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 50)
+        self.font_small = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 30)
 
         self.characters = [
             {
                 "name": "Chiến binh",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/chien_binh",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/chien_binh/dung_yen/0.png"),
+                "folder": "../Tai_nguyen/hinh_anh/nhan_vat/chien_binh",
+                "preview": self._load_preview("../Tai_nguyen/hinh_anh/nhan_vat/chien_binh/dung_yen/0.png"),
                 "stats": {"hp": 500, "speed": 5, "damage": 30, "defense": 2},
                 "color": (0, 255, 0)
             },
             {
                 "name": "Ninja",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/ninja",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/ninja/dung_yen/0.png"),
+                "folder": "../Tai_nguyen/hinh_anh/nhan_vat/ninja",
+                "preview": self._load_preview("../Tai_nguyen/hinh_anh/nhan_vat/ninja/dung_yen/0.png"),
                 "stats": {"hp": 350, "speed": 8, "damage": 25, "defense": 1},
                 "color": (0, 0, 255)
             },
             {
                 "name": "Võ sĩ",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/vo_si",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/vo_si/dung_yen/0.png"),
+                "folder": "../Tai_nguyen/hinh_anh/nhan_vat/vo_si",
+                "preview": self._load_preview("../Tai_nguyen/hinh_anh/nhan_vat/vo_si/dung_yen/0.png"),
                 "stats": {"hp": 600, "speed": 4, "damage": 40, "defense": 3},
                 "color": (255, 0, 0)
             }

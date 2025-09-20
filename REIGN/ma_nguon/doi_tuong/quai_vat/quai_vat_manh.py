@@ -1,5 +1,9 @@
 # file: quai_vat_manh.py
-from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from doi_tuong.quai_vat.quai_vat import QuaiVat
 import random
 class Boss1(QuaiVat):
     def __init__(self, x, y, folder, sound_folder):

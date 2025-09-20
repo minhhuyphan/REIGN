@@ -1,5 +1,8 @@
 import pygame, os
-from ma_nguon.core.quan_ly_tai_nguyen import load_images, load_sound_safe
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from core.quan_ly_tai_nguyen import load_images, load_sound_safe
 
 class Character:
     def __init__(self, x, y, folder, controls=None, color=(0,255,0), auto=False, stats=None):
@@ -40,10 +43,10 @@ class Character:
         self.last_update = pygame.time.get_ticks()
 
         # Âm thanh
-        self.sound_punch = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/danh.mp3", 1.0)
-        self.sound_kick = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/da.mp3", 1.0)
-        self.sound_hit = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/trung.mp3", 1.0)
-        self.sound_run = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/chay.mp3", 0.5)
+        self.sound_punch = load_sound_safe("../Tai_nguyen/am_thanh/hieu_ung/danh.mp3", 1.0)
+        self.sound_kick = load_sound_safe("../Tai_nguyen/am_thanh/hieu_ung/da.mp3", 1.0)
+        self.sound_hit = load_sound_safe("../Tai_nguyen/am_thanh/hieu_ung/trung.mp3", 1.0)
+        self.sound_run = load_sound_safe("../Tai_nguyen/am_thanh/hieu_ung/chay.mp3", 0.5)
 
         # Trạng thái động
         self.actioning = False

@@ -1,7 +1,17 @@
 import pygame, sys
-from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
-from ma_nguon.man_choi.menu import MenuScene
-from ma_nguon.man_choi.chon_nhan_vat import CharacterSelectScene
+import sys
+import os
+
+# Add the parent directory to Python path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Change working directory to the script's directory for resource paths
+script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(script_dir)
+
+from doi_tuong.nhan_vat.nhan_vat import Character
+from man_choi.menu import MenuScene
+from man_choi.chon_nhan_vat import CharacterSelectScene
 
 class Game:
     def __init__(self):
@@ -20,11 +30,11 @@ class Game:
         self.map_width = self.WIDTH * 3  # Map dài gấp 3 màn hình
         
         # --- Load ảnh nền ---
-        self.bg_image = pygame.image.load("tai_nguyen/hinh_anh/giao_dien/bg.png").convert()
+        self.bg_image = pygame.image.load("../Tai_nguyen/hinh_anh/giao_dien/bg.png").convert()
         self.bg_image = pygame.transform.scale(self.bg_image, (self.map_width, self.HEIGHT))
         # --- Load nhạc nền ---
         try:
-            pygame.mixer.music.load("tai_nguyen/am_thanh/nhac/bg.mp3")  # đổi sang mp3/wav/ogg
+            pygame.mixer.music.load("../Tai_nguyen/am_thanh/nhac/bg.mp3")  # đổi sang mp3/wav/ogg
             pygame.mixer.music.play(-1)  # phát lặp vô hạn
         except Exception as e:
             print("Không load được nhạc nền:", e)
@@ -34,7 +44,7 @@ class Game:
         self.current_scene = MenuScene(self)
 
     def change_scene(self, scene_name):
-        from ma_nguon.man_choi.loading import LoadingScene
+        from man_choi.loading import LoadingScene
         if scene_name == "exit":
             self.running = False
         else:
@@ -69,7 +79,7 @@ class Game:
         if hasattr(self, 'font_manager'):
             font = self.font_manager.get_font(size=20)
         else:
-            font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 20)
+            font = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 20)
             
         health_text = f"{player.hp}/{player.max_hp} HP"
         text_surf = font.render(health_text, True, (255, 255, 255))

@@ -6,7 +6,7 @@ def create_sample_parallax_images():
     """Tạo các ảnh mẫu cho các lớp parallax"""
     
     # Tạo thư mục lưu ảnh nếu chưa có
-    parallax_dir = os.path.join("tai_nguyen", "hinh_anh", "canh_nen")
+    parallax_dir = os.path.join("../Tai_nguyen", "hinh_anh", "canh_nen")
     os.makedirs(parallax_dir, exist_ok=True)
     
     # Kích thước cơ bản cho ảnh

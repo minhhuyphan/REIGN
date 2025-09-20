@@ -2,17 +2,19 @@ import pygame
 import os
 import random
 import moviepy as mp
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
-from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
-from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
-from ma_nguon.tien_ich.parallax import ParallaxBackground
+from doi_tuong.nhan_vat.nhan_vat import Character
+from doi_tuong.quai_vat.quai_vat import QuaiVat
+from doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
+from tien_ich.parallax import ParallaxBackground
 
 
 class Level1Scene:
     def __init__(self, game,player=None):
         self.game = game
-        self.font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 50)
+        self.font = pygame.font.Font("../Tai_nguyen/font/Fz-Futurik.ttf", 50)
         self.counter = 0
         
         # Khởi tạo hệ thống parallax background
@@ -20,28 +22,28 @@ class Level1Scene:
         
         # Thêm các lớp cảnh nền từ xa đến gần (tốc độ tăng dần từ 0 đến 1)
         # Lớp 1: Trăng/Bầu trời (ở xa nhất, gần như đứng yên)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/trang_sao.png", speed_factor=0.05, y_pos=0)
+        self.parallax_bg.add_layer("../Tai_nguyen/hinh_anh/canh_nen/trang_sao.png", speed_factor=0.05, y_pos=0)
         
         # Lớp 2: Mây (di chuyển rất chậm)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/may.png", speed_factor=0.1, y_pos=50)
+        self.parallax_bg.add_layer("../Tai_nguyen/hinh_anh/canh_nen/may.png", speed_factor=0.1, y_pos=50)
         
         # Lớp 3: Núi xa (di chuyển chậm)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/nui.png", speed_factor=0.2, y_pos=10, scale_factor=1.5)
+        self.parallax_bg.add_layer("../Tai_nguyen/hinh_anh/canh_nen/nui.png", speed_factor=0.2, y_pos=10, scale_factor=1.5)
         
         # Lớp 4: Cây xa (di chuyển nhanh hơn núi)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/cay_xa.png", speed_factor=0.4, y_pos=150, scale_factor=1.5)
+        self.parallax_bg.add_layer("../Tai_nguyen/hinh_anh/canh_nen/cay_xa.png", speed_factor=0.4, y_pos=150, scale_factor=1.5)
 
         # Lớp 5: Nhà (di chuyển gần bằng mặt đất)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/nha.png", speed_factor=0.6, y_pos=80, scale_factor=1.5)
+        self.parallax_bg.add_layer("../Tai_nguyen/hinh_anh/canh_nen/nha.png", speed_factor=0.6, y_pos=80, scale_factor=1.5)
 
         # Lớp 6: Mặt đất (di chuyển cùng tốc độ camera)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/mat_dat.png", speed_factor=1.0, y_pos=230, repeat_x=True)
+        self.parallax_bg.add_layer("../Tai_nguyen/hinh_anh/canh_nen/mat_dat.png", speed_factor=1.0, y_pos=230, repeat_x=True)
         
         # Lớp 7: Cây gần (phía trước nhân vật, di chuyển nhanh hơn camera)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/cay_gan.png", speed_factor=1.2, y_pos=400, scale_factor=1.5, above_player=True)
+        self.parallax_bg.add_layer("../Tai_nguyen/hinh_anh/canh_nen/cay_gan.png", speed_factor=1.2, y_pos=400, scale_factor=1.5, above_player=True)
 
         # Khởi tạo player
-        folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat")
+        folder_nv = os.path.join("../Tai_nguyen", "hinh_anh", "nhan_vat")
         controls_p1 = {
             "left": pygame.K_LEFT,
             "right": pygame.K_RIGHT,
@@ -55,8 +57,8 @@ class Level1Scene:
         self.player.kick_damage = 20  # Damage đá
 
         # Khởi tạo quái vật thường dọc theo map dài
-        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat")
-        sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
+        folder_qv = os.path.join("../Tai_nguyen", "hinh_anh", "quai_vat")
+        sound_qv = os.path.join("../Tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []
         for i in range(15):  # Tăng số lượng quái vật
@@ -95,7 +97,7 @@ class Level1Scene:
             self.player.y = 300
             self.player.base_y = 300
         else:
-            folder_nv = "tai_nguyen/hinh_anh/nhan_vat"
+            folder_nv = "../Tai_nguyen/hinh_anh/nhan_vat"
             controls_p1 = {
                 "left": pygame.K_LEFT,
                 "right": pygame.K_RIGHT,
@@ -127,7 +129,7 @@ class Level1Scene:
         if self.current_boss_index < len(self.bosses):
             # Nếu là Boss3 thì chơi video cutscene trước
             if self.current_boss_index == 2 and not self.cutscene_done:
-                self.play_cutscene("tai_nguyen/video/boss3_intro.mp4")
+                self.play_cutscene("../Tai_nguyen/video/boss3_intro.mp4")
                 return
 
             self.current_boss = self.bosses[self.current_boss_index]
