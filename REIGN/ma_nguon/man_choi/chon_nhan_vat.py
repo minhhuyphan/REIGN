@@ -7,9 +7,9 @@ class CharacterSelectScene:
         self.game = game
         self.screen_width = self.game.screen.get_width()
         self.screen_height = self.game.screen.get_height()
-        self.font_big = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 60)
-        self.font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 50)
-        self.font_small = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 30)
+        self.font_big = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 60)
+        self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
+        self.font_small = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 30)
 
         self.characters = [
             {

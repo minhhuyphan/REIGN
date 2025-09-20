@@ -178,17 +178,6 @@ class Character:
                 self.frame = 0
 
     def update(self, keys=None, target=None):
-        # Reset damaged flag để cho phép quái gây damage liên tục
-        # Điều này đảm bảo quái có thể đánh player ngay cả khi player đứng yên
-        if hasattr(self, 'last_damage_reset'):
-            import pygame
-            if pygame.time.get_ticks() - self.last_damage_reset > 500:  # Reset mỗi 0.5 giây
-                self.damaged = False
-                self.last_damage_reset = pygame.time.get_ticks()
-        else:
-            import pygame
-            self.last_damage_reset = pygame.time.get_ticks()
-            
         # Xử lý knockback khi bị đánh
         if self.knockback_speed != 0:
             self.x += self.knockback_speed

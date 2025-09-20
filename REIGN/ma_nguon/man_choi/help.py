@@ -3,7 +3,7 @@ import pygame
 class HelpScene:
     def __init__(self, game):
         self.game = game
-        self.font = pygame.font.Font(None, 50)
+        self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:

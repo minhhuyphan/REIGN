@@ -9,10 +9,10 @@ class GameOverScene:
         self.score = score
         
         # Fonts
-        self.title_font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 80)
-        self.button_font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 40)
-        self.info_font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 30)
-        
+        self.title_font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 80)
+        self.button_font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 40)
+        self.info_font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 30)
+
         # Button selection
         self.selected = 0
         self.buttons = ["Chơi lại", "Về Menu", "Thoát game"]
