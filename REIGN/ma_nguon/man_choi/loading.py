@@ -6,7 +6,7 @@ class LoadingScene:
         self.game = game
         self.target_scene = target_scene
         self.start_time = time.time()
-        self.font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 40)
+        self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 40)
 
     def handle_event(self, event):
         pass  # không cần xử lý input khi loading

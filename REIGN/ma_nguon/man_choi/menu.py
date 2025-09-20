@@ -4,7 +4,7 @@ import math
 class MenuScene:
     def __init__(self, game):
         self.game = game  # Tham chiếu đến GameManager hoặc SceneManager
-        self.font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 50)
+        self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
         self.options = ["Màn 1", "Màn 2", "Hướng dẫn", "Thoát"]
         

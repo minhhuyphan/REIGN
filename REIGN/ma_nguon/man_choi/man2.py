@@ -12,7 +12,7 @@ from ma_nguon.tien_ich.parallax import ParallaxBackground
 class Level2Scene:
     def __init__(self, game, player=None):
         self.game = game
-        self.font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 50)
+        self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.counter = 0
         
         # Khởi tạo hệ thống parallax background - phiên bản đêm
@@ -192,43 +192,87 @@ class Level2Scene:
             if self.current_boss and not self.current_boss.dead:
                 self.current_boss.update(target=self.player)
 
+            # Reset player damaged flag dựa trên trạng thái của tất cả enemies
+            any_enemy_attacking = any(enemy.attacking and enemy.state in ["danh", "da"] for enemy in self.normal_enemies)
+            if self.current_boss:
+                any_enemy_attacking = any_enemy_attacking or (self.current_boss.attacking and self.current_boss.state in ["danh", "da", "nhay"])
+            
+            # Chỉ reset damaged flag khi KHÔNG có enemy nào đang tấn công
+            if not any_enemy_attacking:
+                self.player.damaged = False
+
             # Va chạm với quái thường
             for enemy in self.normal_enemies:
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
                 rect_enemy = enemy.image.get_rect(topleft=(enemy.x, enemy.y))
+                    
                 if rect_player.colliderect(rect_enemy):
-                    # Player chỉ gây damage khi THỰC SỰ đang tấn công (actioning = True)
+                    # Player chỉ gây damage ở frame cuối của đòn tấn công
                     if self.player.state == "danh" and self.player.actioning and not enemy.damaged:
-                        enemy.take_damage(self.player.damage, self.player.flip)
-                        enemy.damaged = True
+                        # Kiểm tra xem có đang ở frame cuối của animation không
+                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                            max_frames = len(self.player.animations[self.player.state])
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if self.player.frame >= damage_frame_threshold:
+                                enemy.take_damage(self.player.damage, self.player.flip)
+                                enemy.damaged = True
                     elif self.player.state == "da" and self.player.actioning and not enemy.damaged:
-                        enemy.take_damage(self.player.kick_damage, self.player.flip)
-                        enemy.damaged = True
+                        # Kiểm tra frame cuối cho đòn đá
+                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                            max_frames = len(self.player.animations[self.player.state])
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if self.player.frame >= damage_frame_threshold:
+                                enemy.take_damage(self.player.kick_damage, self.player.flip)
+                                enemy.damaged = True
 
+                    # Quái chỉ gây damage ở frame cuối của đòn tấn công
                     if enemy.state in ["danh", "da"] and not self.player.damaged:
-                        self.player.take_damage(enemy.damage, enemy.flip)
-                        self.player.damaged = True
+                        # Kiểm tra xem có đang ở frame cuối của animation không
+                        if hasattr(enemy, 'animations') and enemy.state in enemy.animations:
+                            max_frames = len(enemy.animations[enemy.state])
+                            # Gây damage ở frame cuối hoặc gần cuối (frame 80-100% của animation)
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if enemy.frame >= damage_frame_threshold:
+                                self.player.take_damage(enemy.damage, enemy.flip)
+                                self.player.damaged = True
                         
             # Va chạm với boss
             if self.current_boss:
                 rect_boss = self.current_boss.image.get_rect(topleft=(self.current_boss.x, self.current_boss.y))
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
                 if rect_boss.colliderect(rect_player):
-                    # Player chỉ gây damage khi THỰC SỰ đang tấn công (actioning = True)
+                    # Player chỉ gây damage ở frame cuối của đòn tấn công
                     if self.player.state == "danh" and self.player.actioning and not self.current_boss.damaged:
-                        self.current_boss.take_damage(self.player.damage, self.player.flip)
-                        self.current_boss.damaged = True
+                        # Kiểm tra xem có đang ở frame cuối của animation không
+                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                            max_frames = len(self.player.animations[self.player.state])
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if self.player.frame >= damage_frame_threshold:
+                                self.current_boss.take_damage(self.player.damage, self.player.flip)
+                                self.current_boss.damaged = True
                     elif self.player.state == "da" and self.player.actioning and not self.current_boss.damaged:
-                        self.current_boss.take_damage(self.player.kick_damage, self.player.flip)
-                        self.current_boss.damaged = True
+                        # Kiểm tra frame cuối cho đòn đá
+                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                            max_frames = len(self.player.animations[self.player.state])
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if self.player.frame >= damage_frame_threshold:
+                                self.current_boss.take_damage(self.player.kick_damage, self.player.flip)
+                                self.current_boss.damaged = True
 
+                    # Boss chỉ gây damage ở frame cuối của đòn tấn công
                     if self.current_boss.state in ["danh", "da", "nhay"] and not self.player.damaged:
-                        # Sử dụng damage đặc biệt của boss nếu có
-                        boss_damage = self.current_boss.damage
-                        if hasattr(self.current_boss, 'get_current_damage'):
-                            boss_damage = self.current_boss.get_current_damage()
-                        self.player.take_damage(boss_damage, self.current_boss.flip)
-                        self.player.damaged = True
+                        # Kiểm tra xem có đang ở frame cuối của animation không
+                        if hasattr(self.current_boss, 'animations') and self.current_boss.state in self.current_boss.animations:
+                            max_frames = len(self.current_boss.animations[self.current_boss.state])
+                            # Gây damage ở frame cuối hoặc gần cuối (frame 80-100% của animation)
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if self.current_boss.frame >= damage_frame_threshold:
+                                # Sử dụng damage đặc biệt của boss nếu có
+                                boss_damage = self.current_boss.damage
+                                if hasattr(self.current_boss, 'get_current_damage'):
+                                    boss_damage = self.current_boss.get_current_damage()
+                                self.player.take_damage(boss_damage, self.current_boss.flip)
+                                self.player.damaged = True
         else:
             # Player chết - chuyển đến màn hình Game Over
             if not hasattr(self, 'death_timer'):
