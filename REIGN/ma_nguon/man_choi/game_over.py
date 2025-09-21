@@ -76,6 +76,14 @@ class GameOverScene:
                 self.game.change_scene("level1")
             elif self.level_name == "Level 2" or hasattr(self.game, 'target_level') and self.game.target_level == "level2":
                 self.game.change_scene("level2")
+            elif self.level_name == "Map Mùa Thu" or hasattr(self.game, 'target_level') and self.game.target_level == "map_mua_thu":
+                self.game.change_scene("map_mua_thu")
+            elif "Mùa Thu - Màn 1" in self.level_name or hasattr(self.game, 'target_level') and self.game.target_level == "map_mua_thu_man1":
+                self.game.change_scene("map_mua_thu_man1")
+            elif "Mùa Thu - Màn 2" in self.level_name or hasattr(self.game, 'target_level') and self.game.target_level == "map_mua_thu_man2":
+                self.game.change_scene("map_mua_thu_man2")
+            elif "Mùa Thu - Màn 3" in self.level_name or hasattr(self.game, 'target_level') and self.game.target_level == "map_mua_thu_man3":
+                self.game.change_scene("map_mua_thu_man3")
             else:
                 # Default to level 1
                 self.game.target_level = "level1"

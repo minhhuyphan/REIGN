@@ -32,6 +32,13 @@ class CharacterSelectScene:
                 "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/vo_si/dung_yen/0.png"),
                 "stats": {"hp": 600, "speed": 4, "damage": 40, "defense": 3},
                 "color": (255, 0, 0)
+            },
+            {
+                "name": "Chiến Thần Lạc Hồng",
+                "folder": "tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong",
+                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong/dung_yen/0.png"),
+                "stats": {"hp": 750, "speed": 6, "damage": 50, "defense": 4},
+                "color": (255, 0, 127)  # Màu hồng đỏ đặc trưng
             }
         ]
         self.selected_idx = 0
@@ -98,46 +105,66 @@ class CharacterSelectScene:
         
         # Tiêu đề
         title = self.font_big.render("CHỌN NHÂN VẬT", True, (255, 255, 0))
-        screen.blit(title, (self.screen_width//2 - title.get_width()//2, 50))
+        screen.blit(title, (self.screen_width//2 - title.get_width()//2, 30))
         
-        # Vẽ các nhân vật (3 nhân vật cạnh nhau)
-        spacing = self.screen_width // 4
+        # Vẽ các nhân vật (4 nhân vật cạnh nhau)
+        num_characters = len(self.characters)
+        spacing = self.screen_width // (num_characters + 1)
         
         for i, char in enumerate(self.characters):
             # Vị trí mỗi nhân vật
             pos_x = spacing * (i + 1)
-            pos_y = self.screen_height // 2 - 100
+            pos_y = self.screen_height // 2 - 80
             
-            # Vẽ khung nhân vật
-            frame_color = (255, 255, 0) if i == self.selected_idx else (100, 100, 100)
-            pygame.draw.rect(screen, frame_color, (pos_x - 100, pos_y - 20, 200, 300), 3)
+            # Vẽ khung nhân vật với hiệu ứng đặc biệt cho nhân vật được chọn
+            if i == self.selected_idx:
+                frame_color = (255, 215, 0)  # Vàng gold cho nhân vật được chọn
+                # Vẽ hiệu ứng glow
+                glow_rect = pygame.Rect(pos_x - 105, pos_y - 25, 210, 280)
+                pygame.draw.rect(screen, (255, 255, 0, 50), glow_rect, 6)
+            else:
+                frame_color = (100, 100, 100)
             
-            # Vẽ tên nhân vật
-            name = self.font.render(char["name"], True, (255, 255, 255))
-            screen.blit(name, (pos_x - name.get_width()//2, pos_y - 60))
+            # Khung chính
+            main_rect = pygame.Rect(pos_x - 100, pos_y - 20, 200, 260)
+            pygame.draw.rect(screen, frame_color, main_rect, 3)
+            
+            # Vẽ tên nhân vật với màu đặc biệt
+            name_color = (255, 255, 0) if i == self.selected_idx else (255, 255, 255)
+            name = self.font_small.render(char["name"], True, name_color)
+            screen.blit(name, (pos_x - name.get_width()//2, pos_y - 50))
             
             # Vẽ ảnh preview
             preview = char["preview"]
+            # Điều chỉnh kích thước preview cho phù hợp với 4 nhân vật
+            preview_scale = 0.4  # Nhỏ hơn một chút để vừa 4 nhân vật
             preview = pygame.transform.scale(preview, 
-                                          (preview.get_width() * self.preview_scale, 
-                                           preview.get_height() * self.preview_scale))
-            screen.blit(preview, (pos_x - preview.get_width()//2, pos_y))
+                                          (int(preview.get_width() * preview_scale), 
+                                           int(preview.get_height() * preview_scale)))
+            screen.blit(preview, (pos_x - preview.get_width()//2, pos_y - 10))
             
-            # Vẽ thông số
-            stats_y = pos_y + 180
+            # Vẽ thông số với font nhỏ hơn
+            stats_y = pos_y + 120
             stats = char["stats"]
-            hp_text = self.font_small.render(f"HP: {stats['hp']}", True, (255, 255, 255))
-            screen.blit(hp_text, (pos_x - 80, stats_y))
+            font_stats = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 20)
             
-            speed_text = self.font_small.render(f"Tốc độ: {stats['speed']}", True, (255, 255, 255))
-            screen.blit(speed_text, (pos_x - 80, stats_y + 30))
+            hp_text = font_stats.render(f"HP: {stats['hp']}", True, (255, 100, 100))
+            screen.blit(hp_text, (pos_x - 85, stats_y))
             
-            dmg_text = self.font_small.render(f"Sát thương: {stats['damage']}", True, (255, 255, 255))
-            screen.blit(dmg_text, (pos_x - 80, stats_y + 60))
+            speed_text = font_stats.render(f"Tốc độ: {stats['speed']}", True, (100, 255, 100))
+            screen.blit(speed_text, (pos_x - 85, stats_y + 25))
             
-            def_text = self.font_small.render(f"Phòng thủ: {stats['defense']}", True, (255, 255, 255))
-            screen.blit(def_text, (pos_x - 80, stats_y + 90))
+            dmg_text = font_stats.render(f"ST: {stats['damage']}", True, (255, 255, 100))
+            screen.blit(dmg_text, (pos_x - 85, stats_y + 50))
+            
+            def_text = font_stats.render(f"PT: {stats['defense']}", True, (100, 100, 255))
+            screen.blit(def_text, (pos_x - 85, stats_y + 75))
+            
+            # Thêm chỉ báo đặc biệt cho Chiến Thần Lạc Hồng
+            if char["name"] == "Chiến Thần Lạc Hồng":
+                special_text = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 18).render("★ HUYỀN THOẠI ★", True, (255, 0, 127))
+                screen.blit(special_text, (pos_x - special_text.get_width()//2, stats_y + 100))
         
         # Hướng dẫn
-        guide = self.font.render("← → để chọn, ENTER để xác nhận, ESC để quay lại", True, (200, 200, 200))
-        screen.blit(guide, (self.screen_width//2 - guide.get_width()//2, self.screen_height - 60))
+        guide = self.font_small.render("← → để chọn, ENTER để xác nhận, ESC để quay lại", True, (200, 200, 200))
+        screen.blit(guide, (self.screen_width//2 - guide.get_width()//2, self.screen_height - 40))

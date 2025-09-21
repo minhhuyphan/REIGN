@@ -27,6 +27,11 @@ class LoadingScene:
         from ma_nguon.man_choi.chon_nhan_vat import CharacterSelectScene
         from ma_nguon.man_choi.man1 import Level1Scene
         from ma_nguon.man_choi.man2 import Level2Scene
+        from ma_nguon.man_choi.map_mua_thu import MapMuaThuScene
+        from ma_nguon.man_choi.map_mua_thu_man1 import MapMuaThuMan1Scene
+        from ma_nguon.man_choi.map_mua_thu_man2 import MapMuaThuMan2Scene
+        from ma_nguon.man_choi.map_mua_thu_man3 import MapMuaThuMan3Scene
+        from ma_nguon.man_choi.chon_man_mua_thu import AutumnLevelsScene
         from ma_nguon.man_choi.help import HelpScene
         from ma_nguon.man_choi.victory import VictoryScene
 
@@ -38,6 +43,16 @@ class LoadingScene:
             self.game.current_scene = Level1Scene(self.game, player=self.game.selected_player)
         elif self.target_scene == "level2":
             self.game.current_scene = Level2Scene(self.game, player=self.game.selected_player)
+        elif self.target_scene == "map_mua_thu":
+            self.game.current_scene = MapMuaThuScene(self.game, player=self.game.selected_player)
+        elif self.target_scene == "map_mua_thu_man1":
+            self.game.current_scene = MapMuaThuMan1Scene(self.game, player=self.game.selected_player)
+        elif self.target_scene == "map_mua_thu_man2":
+            self.game.current_scene = MapMuaThuMan2Scene(self.game, player=self.game.selected_player)
+        elif self.target_scene == "map_mua_thu_man3":
+            self.game.current_scene = MapMuaThuMan3Scene(self.game, player=self.game.selected_player)
+        elif self.target_scene == "autumn_levels":
+            self.game.current_scene = AutumnLevelsScene(self.game)
         elif self.target_scene == "help":
             self.game.current_scene = HelpScene(self.game)
         elif self.target_scene == "victory":
