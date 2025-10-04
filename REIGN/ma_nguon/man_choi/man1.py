@@ -7,6 +7,7 @@ from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
+from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 
 
 class Level1Scene:
@@ -42,20 +43,13 @@ class Level1Scene:
 
         # Khởi tạo player
         folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat")
-        controls_p1 = {
-            "left": pygame.K_LEFT,
-            "right": pygame.K_RIGHT,
-            "attack": pygame.K_a,
-            "kick": pygame.K_s,
-            "defend": pygame.K_d,
-            "jump": pygame.K_w,
-        }
-        self.player = Character(100, 300, folder_nv, controls_p1, color=(0,255,0))
+        # Không truyền controls để Character tự lấy từ settings
+        self.player = Character(100, 300, folder_nv, color=(0,255,0))
         self.player.damage = 15       # Damage đấm
         self.player.kick_damage = 20  # Damage đá
 
         # Khởi tạo quái vật thường dọc theo map dài
-        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat")
+        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")
         sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []
@@ -67,7 +61,6 @@ class Level1Scene:
             enemy.patrol_range = 200  # Khoảng cách di chuyển tối đa từ home_x
             enemy.aggro_range = 300   # Khoảng cách phát hiện và tấn công người chơi
             self.normal_enemies.append(enemy)
-
         # Khởi tạo boss
         self.bosses = [
             Boss1(self.game.map_width - 800, 300, folder_qv, sound_qv),
@@ -94,18 +87,14 @@ class Level1Scene:
             self.player.base_y = 300
         else:
             folder_nv = "tai_nguyen/hinh_anh/nhan_vat"
-            controls_p1 = {
-                "left": pygame.K_LEFT,
-                "right": pygame.K_RIGHT,
-                "attack": pygame.K_a,
-                "kick": pygame.K_s,
-                "defend": pygame.K_d,
-                "jump": pygame.K_w,
-            }
-            self.player = Character(100, 300, folder_nv, controls_p1, color=(0,255,0))
+            # Không truyền controls để Character tự lấy từ settings
+            self.player = Character(100, 300, folder_nv, color=(0,255,0))
             self.player.base_y = 300
             self.player.damage = 15
             self.player.kick_damage = 20
+        
+        # Khởi tạo Action Buttons UI  
+        self.action_buttons = ActionButtonsUI(self.game.WIDTH, self.game.HEIGHT)
 
     def play_cutscene(self, video_path):  # ⬅️ thêm mới
         self.showing_cutscene = True
@@ -116,6 +105,10 @@ class Level1Scene:
 
 
     def handle_event(self, event):
+        # Xử lý Action Buttons trước
+        if self.action_buttons.handle_event(event, self.player):
+            return  # Nếu action button được click thì không xử lý events khác
+            
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
@@ -141,6 +134,9 @@ class Level1Scene:
 
     def update(self):
         keys = pygame.key.get_pressed()
+
+        # Update Action Buttons
+        self.action_buttons.update()
 
         # Nếu đang chiếu video cutscene thì tạm dừng game
         if self.showing_cutscene:  # ⬅️ thêm mới
@@ -329,3 +325,6 @@ class Level1Scene:
         
         # Vẽ các lớp nền phía trước (che phủ nhân vật)
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
+        
+        # Vẽ Action Buttons UI (luôn ở trên cùng, không bị ảnh hưởng camera)
+        self.action_buttons.draw(screen)

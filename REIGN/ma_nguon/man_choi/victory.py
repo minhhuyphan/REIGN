@@ -3,13 +3,15 @@ import os
 import sys
 import time
 import math
+import random
 
 class VictoryScene:
     def __init__(self, game):
         self.game = game
-        self.font_large = pygame.font.Font(None, 80)
-        self.font_medium = pygame.font.Font(None, 50)
-        self.font_small = pygame.font.Font(None, 30)
+        self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
+        self.font_large = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 80)
+        self.font_medium = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
+        self.font_small = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 30)
         self.start_time = pygame.time.get_ticks()
         self.duration = 5000  # Hiển thị màn hình chiến thắng trong 5 giây
         
@@ -25,15 +27,22 @@ class VictoryScene:
         self.animation_frame = 0
         self.animation_tick = 0
         self.stars = []
+        screen_size = pygame.display.get_surface().get_size()
         for i in range(50):
+            # Tạo random position cho star
+            angle = random.random() * 2 * math.pi
+            distance = random.random() * min(screen_size) / 2
+            x = screen_size[0] / 2 + math.cos(angle) * distance
+            y = screen_size[1] / 2 + math.sin(angle) * distance
+            
             self.stars.append({
-                'x': pygame.math.Vector2(pygame.math.Vector2(pygame.display.get_surface().get_size()) * pygame.math.Vector2(pygame.math.Vector2(pygame.math.Vector2(pygame.math.Vector2(pygame.math.Vector2.random()).normalize()))) * pygame.math.Vector2(pygame.math.Vector2(pygame.display.get_surface().get_size()).length() / 2)),
-                'speed': 2 + pygame.math.Vector2.random().x * 3,
-                'angle': pygame.math.Vector2.random().x * 360,
-                'size': 3 + pygame.math.Vector2.random().x * 5,
-                'color': (200 + pygame.math.Vector2.random().x * 55, 
-                          200 + pygame.math.Vector2.random().x * 55, 
-                          100 + pygame.math.Vector2.random().x * 155)
+                'x': pygame.math.Vector2(x, y),
+                'speed': 2 + random.random() * 3,
+                'angle': random.random() * 360,
+                'size': 3 + random.random() * 5,
+                'color': (200 + random.randint(0, 55), 
+                          200 + random.randint(0, 55), 
+                          100 + random.randint(0, 155))
             })
 
     def handle_event(self, event):
@@ -59,9 +68,17 @@ class VictoryScene:
             
             center = pygame.math.Vector2(self.game.WIDTH // 2, self.game.HEIGHT // 2)
             direction = pygame.math.Vector2(star['x']) - center
-            direction.normalize_ip()
-            star['x'].x += direction.x * star['speed']
-            star['x'].y += direction.y * star['speed']
+            
+            # Kiểm tra để tránh normalize vector có length = 0
+            if direction.length() > 0:
+                direction.normalize_ip()
+                star['x'].x += direction.x * star['speed']
+                star['x'].y += direction.y * star['speed']
+            else:
+                # Nếu star ở chính giữa, di chuyển theo một direction ngẫu nhiên
+                angle = random.random() * 2 * math.pi
+                star['x'].x += math.cos(angle) * star['speed']
+                star['x'].y += math.sin(angle) * star['speed']
             
             # Nếu sao ra khỏi màn hình, tạo lại ở giữa
             if (star['x'].x < 0 or star['x'].x > self.game.WIDTH or 

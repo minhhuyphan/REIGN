@@ -9,7 +9,7 @@ class Boss1(QuaiVat):
         self.speed = 3
         self.damage = 10
         self.attack_cooldown = 600  # tấn công nhanh hơn
-
+        
 class Boss2(QuaiVat):
     def __init__(self, x, y, folder, sound_folder):
         super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=15)

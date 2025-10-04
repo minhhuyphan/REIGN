@@ -1,5 +1,6 @@
 import pygame, os
 from ma_nguon.core.quan_ly_tai_nguyen import load_images, load_sound_safe
+from ma_nguon.core.settings_manager import get_settings_manager
 
 class Character:
     def __init__(self, x, y, folder, controls=None, color=(0,255,0), auto=False, stats=None):
@@ -18,15 +19,29 @@ class Character:
             self.defense = stats.get("defense", 2)
             self.regen_hp = stats.get("regen_hp", 0)
         else:
-            self.hp = 500
-            self.max_hp = 500
+            self.hp = 1000
+            self.max_hp = 1000
             self.speed = 5
             self.damage = 30
             self.kick_damage = 20
             self.defense = 2
             self.regen_hp = 0  # HP hồi mỗi giây
         
-        self.controls = controls or {}
+        # Controls - sử dụng settings manager nếu không có controls được truyền vào
+        self.settings_manager = get_settings_manager()
+        if controls:
+            self.controls = controls
+        else:
+            # Map từ settings controls sang character controls
+            settings_controls = self.settings_manager.settings["controls"]
+            self.controls = {
+                "left": settings_controls["move_left"],
+                "right": settings_controls["move_right"],
+                "jump": settings_controls["jump"],
+                "attack": settings_controls["attack"],
+                "kick": settings_controls["kick"],
+                "defend": settings_controls["defend"]
+            }
         self.color = color
         self.auto = auto
         self.folder = folder  # Lưu folder để tải lại animation nếu cần
@@ -39,11 +54,12 @@ class Character:
         self.animation_cooldown = 100
         self.last_update = pygame.time.get_ticks()
 
-        # Âm thanh
-        self.sound_punch = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/danh.mp3", 1.0)
-        self.sound_kick = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/da.mp3", 1.0)
-        self.sound_hit = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/trung.mp3", 1.0)
-        self.sound_run = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/chay.mp3", 0.5)
+        # Âm thanh - với volume từ settings
+        sfx_volume = self.settings_manager.get_sfx_volume()
+        self.sound_punch = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/danh.mp3", sfx_volume)
+        self.sound_kick = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/da.mp3", sfx_volume)
+        self.sound_hit = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/trung.mp3", sfx_volume)
+        self.sound_run = load_sound_safe("tai_nguyen/am_thanh/hieu_ung/chay.mp3", sfx_volume * 0.5)
 
         # Trạng thái động
         self.actioning = False
