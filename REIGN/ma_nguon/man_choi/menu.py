@@ -42,10 +42,13 @@ class MenuScene:
                     self.game.target_level = "level2"
                     self.game.change_scene("character_select")
                 elif self.selected == 2:
-                    self.game.change_scene("help")
+                    # Chuyển đến menu chọn màn mùa thu
+                    self.game.change_scene("autumn_levels")
                 elif self.selected == 3:
                     self.game.change_scene("settings")
-                elif self.selected == 4:
+                elif self.selected == 4
+                    self.game.change_scene("help")
+                elif self.selected == 5
                     self.game.running = False
 
     def update(self):
