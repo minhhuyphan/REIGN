@@ -49,7 +49,7 @@ class Level1Scene:
         self.player.kick_damage = 20  # Damage đá
 
         # Khởi tạo quái vật thường dọc theo map dài
-        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")
+        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat")
         sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []

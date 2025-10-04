@@ -62,7 +62,7 @@ class Level2Scene:
         self.action_buttons = ActionButtonsUI(self.game.WIDTH, self.game.HEIGHT)
     
         # Khởi tạo quái vật theo mẫu mới - nhiều hơn và khó hơn
-        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")
+        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat")
         sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []

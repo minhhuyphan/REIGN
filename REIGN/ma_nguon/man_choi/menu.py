@@ -84,18 +84,18 @@ class MenuScene:
         
         # Draw title shadow first
         shadow_x = screen.get_width()//2 - shadow_scaled.get_width()//2 + 3
-        shadow_y = 103
+        shadow_y = 80
         screen.blit(shadow_scaled, (shadow_x, shadow_y))
         
         # Draw main title
         title_x = screen.get_width()//2 - title_scaled.get_width()//2
-        title_y = 100
+        title_y = 80
         screen.blit(title_scaled, (title_x, title_y))
         
         # Menu options with medieval-themed colors and bounce effect
         for i, text in enumerate(self.options):
             # Calculate base position
-            base_y = 250 + i*70
+            base_y = 150 + i*70
             option_y = base_y
             
             if i == self.selected:
