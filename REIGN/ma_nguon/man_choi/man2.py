@@ -7,6 +7,7 @@ from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
+from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 
 
 class Level2Scene:
@@ -50,22 +51,18 @@ class Level2Scene:
         else:
             # Code tạo player mới
             folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat")
-            controls_p1 = {
-                "left": pygame.K_LEFT,
-                "right": pygame.K_RIGHT,
-                "attack": pygame.K_a,
-                "kick": pygame.K_s,
-                "defend": pygame.K_d,
-                "jump": pygame.K_w,
-            }
-            self.player = Character(100, 300, folder_nv, controls_p1, color=(0,255,0))
+            # Không truyền controls để Character tự lấy từ settings
+            self.player = Character(100, 300, folder_nv, color=(0,255,0))
     
         # Cập nhật các thuộc tính cho nhân vật
         self.player.damage = 15       # Damage đấm
         self.player.kick_damage = 20  # Damage đá
+        
+        # Khởi tạo Action Buttons UI
+        self.action_buttons = ActionButtonsUI(self.game.WIDTH, self.game.HEIGHT)
     
         # Khởi tạo quái vật theo mẫu mới - nhiều hơn và khó hơn
-        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat")
+        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")
         sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []
@@ -127,6 +124,10 @@ class Level2Scene:
         
 
     def handle_event(self, event):
+        # Xử lý Action Buttons trước
+        if self.action_buttons.handle_event(event, self.player):
+            return  # Nếu action button được click thì không xử lý events khác
+            
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
@@ -146,6 +147,9 @@ class Level2Scene:
 
     def update(self):
         keys = pygame.key.get_pressed()
+
+        # Update Action Buttons
+        self.action_buttons.update()
 
         # --- Cập nhật camera theo nhân vật ---
         screen_center_x = self.game.WIDTH // 2
@@ -331,5 +335,9 @@ class Level2Scene:
 
         # Vẽ nhân vật (với camera offset)
         self.player.draw(screen, self.camera_x)
+        
         # Vẽ các lớp nền phía trước (che phủ nhân vật)
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
+        
+        # Vẽ Action Buttons UI (luôn ở trên cùng, không bị ảnh hưởng camera)
+        self.action_buttons.draw(screen)

@@ -29,6 +29,7 @@ class LoadingScene:
         from ma_nguon.man_choi.man2 import Level2Scene
         from ma_nguon.man_choi.help import HelpScene
         from ma_nguon.man_choi.victory import VictoryScene
+        from ma_nguon.man_choi.settings import SettingsScene
 
         if self.target_scene == "menu":
             self.game.current_scene = MenuScene(self.game)
@@ -42,3 +43,5 @@ class LoadingScene:
             self.game.current_scene = HelpScene(self.game)
         elif self.target_scene == "victory":
             self.game.current_scene = VictoryScene(self.game)
+        elif self.target_scene == "settings":
+            self.game.current_scene = SettingsScene(self.game)

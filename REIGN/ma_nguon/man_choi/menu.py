@@ -6,7 +6,7 @@ class MenuScene:
         self.game = game  # Tham chiếu đến GameManager hoặc SceneManager
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
-        self.options = ["Màn 1", "Màn 2", "Hướng dẫn", "Thoát"]
+        self.options = ["Màn 1", "Màn 2", "Hướng dẫn", "Cài đặt", "Thoát"]
         
         # Animation variables
         self.bounce_offset = 0
@@ -44,6 +44,8 @@ class MenuScene:
                 elif self.selected == 2:
                     self.game.change_scene("help")
                 elif self.selected == 3:
+                    self.game.change_scene("settings")
+                elif self.selected == 4:
                     self.game.running = False
 
     def update(self):

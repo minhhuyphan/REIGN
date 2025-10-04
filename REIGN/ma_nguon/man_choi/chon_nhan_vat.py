@@ -30,7 +30,7 @@ class CharacterSelectScene:
                 "name": "Võ sĩ",
                 "folder": "tai_nguyen/hinh_anh/nhan_vat/vo_si",
                 "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/vo_si/dung_yen/0.png"),
-                "stats": {"hp": 600, "speed": 4, "damage": 40, "defense": 3},
+                "stats": {"hp": 1000, "speed": 4, "damage": 100, "defense": 3},
                 "color": (255, 0, 0)
             }
         ]
@@ -61,17 +61,10 @@ class CharacterSelectScene:
     
     def _create_player(self):
         selected = self.characters[self.selected_idx]
-        controls = {
-            "left": pygame.K_LEFT,
-            "right": pygame.K_RIGHT,
-            "attack": pygame.K_a,
-            "kick": pygame.K_s,
-            "defend": pygame.K_d,
-            "jump": pygame.K_w,
-        }
+        # Không truyền controls để Character tự lấy từ settings
         
         # Tạo nhân vật với thuộc tính phù hợp
-        player = Character(100, 300, selected["folder"], controls, selected["color"])
+        player = Character(100, 300, selected["folder"], color=selected["color"])
         
         # Cập nhật các thuộc tính từ stats
         player.hp = selected["stats"]["hp"]
