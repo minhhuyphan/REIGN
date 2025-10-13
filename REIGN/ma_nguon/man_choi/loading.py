@@ -18,9 +18,36 @@ class LoadingScene:
 
     def draw(self, screen):
         screen.fill((0, 0, 0))
-        text = self.font.render("Đang tải...", True, (255, 255, 255))
-        screen.blit(text, (screen.get_width()//2 - text.get_width()//2,
-                           screen.get_height()//2 - text.get_height()//2))
+        
+        # Hiệu ứng loading đặc biệt cho Map Công Nghệ
+        if self.target_scene == "map_cong_nghe":
+            # Nền đen với hiệu ứng tech
+            screen.fill((10, 10, 30))
+            
+            # Loading text với màu cyan
+            text = self.font.render("Đang tải Map Công Nghệ...", True, (0, 255, 255))
+            screen.blit(text, (screen.get_width()//2 - text.get_width()//2,
+                               screen.get_height()//2 - text.get_height()//2))
+            
+            # Hiệu ứng loading bar đơn giản
+            elapsed = time.time() - self.start_time
+            progress = min(elapsed / 1.5, 1.0)  # 1.5 giây để load
+            
+            bar_width = 400
+            bar_height = 20
+            bar_x = screen.get_width()//2 - bar_width//2
+            bar_y = screen.get_height()//2 + 50
+            
+            # Vẽ khung
+            pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
+            # Vẽ tiến trình
+            pygame.draw.rect(screen, (0, 255, 255), (bar_x, bar_y, int(bar_width * progress), bar_height))
+            
+        else:
+            # Loading bình thường
+            text = self.font.render("Đang tải...", True, (255, 255, 255))
+            screen.blit(text, (screen.get_width()//2 - text.get_width()//2,
+                               screen.get_height()//2 - text.get_height()//2))
 
     def load_next_scene(self):
         from ma_nguon.man_choi.menu import MenuScene
@@ -57,3 +84,17 @@ class LoadingScene:
             self.game.current_scene = HelpScene(self.game)
         elif self.target_scene == "victory":
             self.game.current_scene = VictoryScene(self.game)
+        elif self.target_scene == "map_cong_nghe":
+            # ✨ THÊM DÒNG NÀY - Xử lý Map Công Nghệ
+            try:
+                from ma_nguon.man_choi.map_cong_nghe import MapCongNgheScene
+                self.game.current_scene = MapCongNgheScene(self.game, player=self.game.selected_player)
+                print("Load Map Công Nghệ thành công!")
+            except Exception as e:
+                print(f"Lỗi load Map Công Nghệ: {e}")
+                # Fallback về menu nếu có lỗi
+                self.game.current_scene = MenuScene(self.game)
+        else:
+            # Fallback về menu nếu không tìm thấy scene
+            print(f"Không tìm thấy scene: {self.target_scene}")
+            self.game.current_scene = MenuScene(self.game)

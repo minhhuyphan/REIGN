@@ -6,7 +6,8 @@ class MenuScene:
         self.game = game  # Tham chiếu đến GameManager hoặc SceneManager
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
-        self.options = ["Màn 1", "Màn 2", "Map Mùa Thu", "Hướng dẫn", "Thoát"]
+        # Thêm "Map Công Nghệ" vào danh sách options
+        self.options = ["Màn 1", "Màn 2", "Map Mùa Thu", "Map Công Nghệ", "Hướng dẫn", "Thoát"]
         
         # Animation variables
         self.bounce_offset = 0
@@ -45,8 +46,14 @@ class MenuScene:
                     # Chuyển đến menu chọn màn mùa thu
                     self.game.change_scene("autumn_levels")
                 elif self.selected == 3:
-                    self.game.change_scene("help")
+                    # Chuyển trực tiếp đến Map Công Nghệ
+                    self.game.target_level = "map_cong_nghe"
+                    self.game.change_scene("character_select")
                 elif self.selected == 4:
+                    # Hướng dẫn (chỉ số tăng lên do thêm option mới)
+                    self.game.change_scene("help")
+                elif self.selected == 5:
+                    # Thoát (chỉ số tăng lên do thêm option mới)
                     self.game.running = False
 
     def update(self):
@@ -92,30 +99,67 @@ class MenuScene:
         
         # Menu options with medieval-themed colors and bounce effect
         for i, text in enumerate(self.options):
-            # Calculate base position
-            base_y = 250 + i*70
+            # Calculate base position - điều chỉnh khoảng cách cho 6 options
+            base_y = 230 + i*60  # Giảm khoảng cách từ 70 xuống 60
             option_y = base_y
             
+            # Màu sắc đặc biệt cho Map Công Nghệ
+            if text == "Map Công Nghệ":
+                if i == self.selected:
+                    color = (0, 255, 255)  # Cyan sáng khi được chọn
+                else:
+                    color = (0, 191, 255)  # Deep Sky Blue khi không được chọn
+            else:
+                if i == self.selected:
+                    # Selected option - bright orange/amber with bounce effect
+                    color = (255, 140, 0)  # Bright amber
+                    option_y += self.bounce_offset  # Add bounce animation
+                else:
+                    # Unselected options - light cream/beige
+                    color = (245, 245, 220)  # Light beige
+            
             if i == self.selected:
-                # Selected option - bright orange/amber with bounce effect
-                color = (255, 140, 0)  # Bright amber
-                option_y += self.bounce_offset  # Add bounce animation
+                option_y += self.bounce_offset  # Add bounce animation cho tất cả selected options
                 
                 # Add background rectangle for selected option
                 option_surface = self.font.render(text, True, color)
                 bg_rect = pygame.Rect(0, 0, option_surface.get_width() + 40, option_surface.get_height() + 20)
                 bg_rect.center = (screen.get_width()//2, option_y + option_surface.get_height()//2)
-                pygame.draw.rect(screen, (80, 80, 100), bg_rect, border_radius=10)
-                pygame.draw.rect(screen, color, bg_rect, 3, border_radius=10)
                 
-                # Add glow effect for selected option
-                glow_color = (255, 215, 0)  # Gold glow
-                glow_option = self.font.render(text, True, glow_color)
-                screen.blit(glow_option, (screen.get_width()//2 - glow_option.get_width()//2 + 1, option_y + 1))
-                screen.blit(glow_option, (screen.get_width()//2 - glow_option.get_width()//2 - 1, option_y - 1))
-            else:
-                # Unselected options - light cream/beige
-                color = (245, 245, 220)  # Light beige
+                # Màu nền đặc biệt cho Map Công Nghệ
+                if text == "Map Công Nghệ":
+                    pygame.draw.rect(screen, (30, 30, 80), bg_rect, border_radius=10)  # Nền xanh đậm
+                    pygame.draw.rect(screen, (0, 255, 255), bg_rect, 3, border_radius=10)  # Viền cyan
+                    
+                    # Hiệu ứng glow đặc biệt cho Map Công Nghệ
+                    glow_color = (0, 255, 255)  # Cyan glow
+                    glow_option = self.font.render(text, True, glow_color)
+                    screen.blit(glow_option, (screen.get_width()//2 - glow_option.get_width()//2 + 1, option_y + 1))
+                    screen.blit(glow_option, (screen.get_width()//2 - glow_option.get_width()//2 - 1, option_y - 1))
+                else:
+                    pygame.draw.rect(screen, (80, 80, 100), bg_rect, border_radius=10)
+                    pygame.draw.rect(screen, color, bg_rect, 3, border_radius=10)
+                    
+                    # Add glow effect for selected option
+                    glow_color = (255, 215, 0)  # Gold glow
+                    glow_option = self.font.render(text, True, glow_color)
+                    screen.blit(glow_option, (screen.get_width()//2 - glow_option.get_width()//2 + 1, option_y + 1))
+                    screen.blit(glow_option, (screen.get_width()//2 - glow_option.get_width()//2 - 1, option_y - 1))
             
             option = self.font.render(text, True, color)
             screen.blit(option, (screen.get_width()//2 - option.get_width()//2, option_y))
+        
+        # Thêm icon hoặc chỉ báo đặc biệt cho Map Công Nghệ
+        tech_map_index = 3  # Vị trí của "Map Công Nghệ" trong danh sách
+        if self.selected == tech_map_index:
+            # Vẽ các hạt công nghệ nhỏ xung quanh text được chọn
+            import random
+            for _ in range(5):
+                offset_x = random.randint(-100, 100)
+                offset_y = random.randint(-20, 20)
+                particle_x = screen.get_width()//2 + offset_x
+                particle_y = 230 + tech_map_index*60 + offset_y + self.bounce_offset
+                
+                # Vẽ hạt nhỏ với alpha thấp
+                particle_color = (0, 255, 255, 100)
+                pygame.draw.circle(screen, (0, 255, 255), (int(particle_x), int(particle_y)), 2)
