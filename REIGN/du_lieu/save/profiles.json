@@ -1,6 +1,13 @@
 {
   "vinh": {
-    "gold": 165,
+    "gold": 4641,
+    "purchased_characters": [
+      "chien_binh",
+      "chien_than_lac_hong"
+    ]
+  },
+  "phuc": {
+    "gold": 157,
     "purchased_characters": [
       "chien_binh"
     ]

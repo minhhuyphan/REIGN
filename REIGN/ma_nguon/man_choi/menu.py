@@ -57,16 +57,17 @@ class MenuScene:
                 elif self.selected == 7:
                     # If a user is logged in, log them out; otherwise open login
                     if hasattr(self.game, 'current_user') and self.game.current_user:
-                        # clear session and current user
+                        # clear session and current user, then go to login
                         try:
                             from ma_nguon.tien_ich import user_store
                             user_store.clear_session()
                         except Exception:
                             pass
                         self.game.current_user = None
-                        # update options text back to Thoát
-                        self.game.change_scene('menu')
+                        # Go to login screen after logout
+                        self.game.change_scene('login')
                     else:
+                        # No user: go to login
                         self.game.change_scene('login')
 
 

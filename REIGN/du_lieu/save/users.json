@@ -2,5 +2,9 @@
   "vinh": {
     "salt": "a4bbb61c6b43a888a1eb9579b8bb6c8e",
     "pw_hash": "365e675a3758037db1c5ede8d70c09f232c0b794ef96b0d112e8fb7962538197"
+  },
+  "phuc": {
+    "salt": "ba9e4df35a4936a261f7f4a677625f24",
+    "pw_hash": "71deb36d219e4328e06217c8fb1022bbb909806354a03472b01de01057f10340"
   }
 }
