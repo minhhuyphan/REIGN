@@ -42,7 +42,15 @@ class Game:
             self.profile = profile_manager.load_profile(self.current_user)
         else:
             self.profile = None
-        self.current_scene = LoginScene(self)
+        # If a current_user is found, go straight to MenuScene, otherwise show Login
+        if self.current_user:
+            try:
+                self.current_scene = MenuScene(self)
+            except Exception:
+                # Fallback to login if menu fails
+                self.current_scene = LoginScene(self)
+        else:
+            self.current_scene = LoginScene(self)
 
     def save_current_profile(self):
         if not self.current_user or not self.profile:

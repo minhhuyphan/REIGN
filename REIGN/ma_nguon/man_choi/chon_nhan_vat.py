@@ -47,7 +47,7 @@ class CharacterSelectScene:
                 "folder": "tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong",
                 "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong/dung_yen/0.png"),
                 # Updated stats as requested
-                "stats": {"hp": 2000, "speed": 4, "damage": 200, "defense": 8},
+                "stats": {"hp": 2000, "speed": 4, "damage": 120, "defense": 8},
                 "color": (255, 200, 0),
                 "price": 500
             },
