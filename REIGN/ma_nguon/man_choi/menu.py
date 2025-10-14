@@ -8,7 +8,7 @@ class MenuScene:
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
 
-        self.options = ["Màn 1", "Màn 2", "Map mùa thu", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
+        self.options = ["Màn 1", "Màn 2", "Map mùa thu", "Map Công Nghệ", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
 
         # Animation variables
         self.bounce_offset = 0
@@ -44,16 +44,17 @@ class MenuScene:
                 elif self.selected == 2:
                     self.game.change_scene("autumn_levels")
                 elif self.selected == 3:
-
+                    # Map Công Nghệ
+                    # Use the registered scene key 'map_cong_nghe' (matches file map_cong_nghe.py)
+                    self.game.change_scene('map_cong_nghe')
+                elif self.selected == 4:
                     # Cửa hàng
                     self.game.change_scene("shop")
-
-                elif self.selected == 4:
-                    self.game.change_scene("help")
                 elif self.selected == 5:
-                    self.game.change_scene("settings")
+                    self.game.change_scene("help")
                 elif self.selected == 6:
-
+                    self.game.change_scene("settings")
+                elif self.selected == 7:
                     # If a user is logged in, log them out; otherwise open login
                     if hasattr(self.game, 'current_user') and self.game.current_user:
                         # clear session and current user
@@ -169,8 +170,11 @@ class MenuScene:
             screen.blit(option, (screen.get_width() // 2 - option.get_width() // 2, option_y))
 
         # Hiệu ứng hạt xung quanh Map Công Nghệ khi được chọn
-        tech_map_index = 3
-        if self.selected == tech_map_index:
+        try:
+            tech_map_index = options.index("Map Công Nghệ")
+        except ValueError:
+            tech_map_index = None
+        if tech_map_index is not None and self.selected == tech_map_index:
             for _ in range(5):
                 offset_x = random.randint(-100, 100)
                 offset_y = random.randint(-20, 20)

@@ -8,6 +8,7 @@ from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
+from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 
 
 class MapCongNgheScene:
@@ -33,6 +34,9 @@ class MapCongNgheScene:
                 self.font = pygame.font.SysFont(None, 50)
 
             self.counter = 0
+
+            # On-screen action buttons UI (match Map Mùa Thu)
+            self.action_buttons = ActionButtonsUI(self.game.WIDTH, self.game.HEIGHT)
 
             # Khởi tạo hệ thống parallax background (guard nếu lỗi)
             try:
@@ -95,6 +99,9 @@ class MapCongNgheScene:
             sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
             self.normal_enemies = []
+
+            # items dropped on the ground (collected from dead enemies)
+            self.items = []
 
             tech_colors = [
                 (0, 255, 255),
@@ -239,6 +246,13 @@ class MapCongNgheScene:
             return
 
     def handle_event(self, event):
+        # Let UI handle clicks / buttons first
+        try:
+            if self.action_buttons.handle_event(event, player=getattr(self, 'player', None)):
+                return
+        except Exception:
+            pass
+
         if not getattr(self, "initialized", True):
             print("[DEBUG] MapCongNgheScene.handle_event ignored (init failed)")
             return
@@ -253,6 +267,7 @@ class MapCongNgheScene:
                     self.game.change_scene("menu")
                 except Exception:
                     traceback.print_exc()
+
 
     def spawn_next_boss(self):
         # guard: only change scene if initialized
@@ -427,6 +442,28 @@ class MapCongNgheScene:
                     self.current_boss.update(target=self.player)
                 except Exception:
                     traceback.print_exc()
+
+            # Update UI
+            try:
+                self.action_buttons.update()
+            except Exception:
+                pass
+
+            # Pickup items: check collisions between player and items
+            remaining_items = []
+            for item in getattr(self, 'items', []):
+                if getattr(item, 'picked', False):
+                    continue
+                item_rect = pygame.Rect(getattr(item, 'x', 0), getattr(item, 'y', 0), 24, 24)
+                player_rect = pygame.Rect(getattr(self.player, 'x', 0), getattr(self.player, 'y', 0), 50, 80)
+                if player_rect.colliderect(item_rect):
+                    try:
+                        item.on_pickup(self.player)
+                    except Exception:
+                        pass
+                else:
+                    remaining_items.append(item)
+            self.items = remaining_items
 
             any_enemy_attacking = any(getattr(enemy, "attacking", False) and getattr(enemy, "state", "") in ["danh", "da"] for enemy in (self.normal_enemies + self.mid_enemies))
             if self.current_boss:
@@ -660,3 +697,9 @@ class MapCongNgheScene:
                 self.game.draw_player_health_bar(screen, self.player)
             except Exception:
                 traceback.print_exc()
+
+        # Draw Action Buttons HUD on top (match Map Mùa Thu)
+        try:
+            self.action_buttons.draw(screen, player=self.player)
+        except Exception:
+            pass
