@@ -137,7 +137,7 @@ class MenuScene:
         for i, text in enumerate(options):
             # Calculate base position
             base_y = 250 + i*70
-
+            option_y = base_y
 
             # Màu sắc đặc biệt cho Map Công Nghệ
             if text == "Map Công Nghệ":

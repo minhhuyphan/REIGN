@@ -12,7 +12,8 @@ class ShopScene:
             { 'id': 'chien_binh', 'name': 'Chiến binh', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/chien_binh', 'price': 0 },
             { 'id': 'ninja', 'name': 'Ninja', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/ninja', 'price': 300 },
             { 'id': 'vo_si', 'name': 'Võ sĩ', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/vo_si', 'price': 400 },
-            { 'id': 'chien_than_lac_hong', 'name': 'Chiến Thần Lạc Hồng', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong', 'price': 500 }
+            { 'id': 'chien_than_lac_hong', 'name': 'Chiến Thần Lạc Hồng', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong', 'price': 500 },
+            { 'id': 'tho_san_quai_vat', 'name': 'Thợ Săn Quái Vật', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/tho_san_quai_vat', 'price': 350 }
         ]
 
         # load previews
@@ -29,6 +30,8 @@ class ShopScene:
         self.buttons = []  # buy button rects indexed by item index
         self.message = ''
         self.msg_timer = 0
+        self.selected_idx = 0
+        self.input_cooldown = 0
 
     def create_buttons(self):
         # deprecated
@@ -36,14 +39,31 @@ class ShopScene:
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
+            if event.key == pygame.K_ESCAPE or event.key == pygame.K_s:
                 self.game.change_scene('menu')
+                return
+            # keyboard navigation
+            if self.input_cooldown == 0:
+                if event.key == pygame.K_LEFT:
+                    self.selected_idx = max(0, self.selected_idx - 1)
+                    self.input_cooldown = 8
+                    return
+                elif event.key == pygame.K_RIGHT:
+                    self.selected_idx = min(len(self.catalog)-1, self.selected_idx + 1)
+                    self.input_cooldown = 8
+                    return
+                elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                    # attempt purchase on selected
+                    self.buy_by_index(self.selected_idx)
+                    self.input_cooldown = 8
+                    return
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
             # check buy buttons
             for idx, rect in enumerate(self.buttons):
                 if rect.collidepoint(mx, my):
                     self.buy_by_index(idx)
+                    self.selected_idx = idx
                     return
 
     def buy_character(self, cid):
@@ -86,6 +106,9 @@ class ShopScene:
             self.msg_timer -= 1
             if self.msg_timer == 0:
                 self.message = ''
+        # input cooldown for keyboard navigation
+        if getattr(self, 'input_cooldown', 0) > 0:
+            self.input_cooldown -= 1
 
     def draw(self, screen):
         screen.fill((30, 30, 60))
@@ -111,7 +134,11 @@ class ShopScene:
 
             # frame
             main_rect = pygame.Rect(pos_x - 100, pos_y - 20, 200, 260)
-            pygame.draw.rect(screen, (120,120,120), main_rect, 3)
+            # highlight selected
+            if i == getattr(self, 'selected_idx', 0):
+                pygame.draw.rect(screen, (255, 215, 0), main_rect, 4)
+            else:
+                pygame.draw.rect(screen, (120,120,120), main_rect, 3)
 
             # name
             name_color = (255,215,0)
