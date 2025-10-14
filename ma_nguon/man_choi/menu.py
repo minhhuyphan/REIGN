@@ -8,7 +8,7 @@ class MenuScene:
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
 
-        self.options = ["Màn 1", "Màn 2", "Map mùa thu", "Map Công Nghệ","Map NINJA", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
+        self.options = ["Màn 1", "Màn 2", "Map mùa thu", "Map Công Nghệ","Map NINJA", "Map Rừng Linh Vực", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
 
         # Animation variables
         self.bounce_offset = 0
@@ -50,13 +50,16 @@ class MenuScene:
                 elif self.selected == 4:
                     self.game.change_scene('autumn_levels_ninja')
                 elif self.selected == 5:
+                    self.game.target_level = "map_rung_linh_vuc"
+                    self.game.change_scene("character_select")
+                elif self.selected == 6:
                     # Cửa hàng
                     self.game.change_scene("shop")
-                elif self.selected == 6:
-                    self.game.change_scene("help")
                 elif self.selected == 7:
-                    self.game.change_scene("settings")
+                    self.game.change_scene("help")
                 elif self.selected == 8:
+                    self.game.change_scene("settings")
+                elif self.selected == 9:
                     # If a user is logged in, log them out; otherwise open login
                     if hasattr(self.game, 'current_user') and self.game.current_user:
                         # clear session and current user

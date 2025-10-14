@@ -66,6 +66,7 @@ class LoadingScene:
         from ma_nguon.man_choi.register import RegisterScene
         from ma_nguon.man_choi.shop import ShopScene
         from ma_nguon.man_choi.map_cong_nghe import MapCongNgheScene
+        from ma_nguon.man_choi.maprunglinhvuc import MapRungLinhVucScene
 
         if self.target_scene == "menu":
             self.game.current_scene = MenuScene(self.game)
@@ -89,6 +90,16 @@ class LoadingScene:
             # Create the Map Công Nghệ scene (pass selected player if any)
             try:
                 self.game.current_scene = MapCongNgheScene(self.game, player=self.game.selected_player)
+            except Exception:
+                # If scene init fails, fall back to menu
+                try:
+                    self.game.current_scene = MenuScene(self.game)
+                except Exception:
+                    self.game.current_scene = None
+        elif self.target_scene == "map_rung_linh_vuc":
+            # Create the Map Rừng Linh Vực scene (pass selected player if any)
+            try:
+                self.game.current_scene = MapRungLinhVucScene(self.game, player=self.game.selected_player)
             except Exception:
                 # If scene init fails, fall back to menu
                 try:
