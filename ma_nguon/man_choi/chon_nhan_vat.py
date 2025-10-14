@@ -60,6 +60,24 @@ class CharacterSelectScene:
                 "color": (128, 0, 128),
                 "price": 250
             },
+            {
+                "id": "mi_anh",
+                "name": "Mị Ảnh",
+                "folder": "tai_nguyen/hinh_anh/nhan_vat/Mi_Anh",
+                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/Mi_Anh/dung_yen/0.png"),
+                "stats": {"hp": 450, "speed": 9, "damage": 28, "defense": 1},
+                "color": (100, 100, 255),
+                "price": 350
+            },
+            {
+                "id": "van_dao",
+                "name": "Vân Dao",
+                "folder": "tai_nguyen/hinh_anh/nhan_vat/Van_Dao",
+                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/Van_Dao/dung_yen/0.png"),
+                "stats": {"hp": 600, "speed": 8, "damage": 32, "defense": 2},
+                "color": (255, 100, 200),
+                "price": 370
+            },
           
         ]
         self.selected_idx = 0
