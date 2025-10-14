@@ -2,13 +2,16 @@ import pygame, sys
 from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.man_choi.menu import MenuScene
 from ma_nguon.man_choi.chon_nhan_vat import CharacterSelectScene
+from ma_nguon.man_choi.login import LoginScene
+from ma_nguon.core import profile_manager
+from ma_nguon.tien_ich import user_store
 
 class Game:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
         # --- Cấu hình cửa sổ ---
-        self.WIDTH, self.HEIGHT = 1600, 700
+        self.WIDTH, self.HEIGHT = 1600, 820
         screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Game Có Âm Thanh & Animation")
         self.clock = pygame.time.Clock()
@@ -31,7 +34,20 @@ class Game:
 
         # --- Scene quản lý ---
         self.running = True
-        self.current_scene = MenuScene(self)
+        # Start the game at the login screen
+        # Load current user from session
+        self.current_user = user_store.load_current_user()
+        # Load profile for current user if any
+        if self.current_user:
+            self.profile = profile_manager.load_profile(self.current_user)
+        else:
+            self.profile = None
+        self.current_scene = LoginScene(self)
+
+    def save_current_profile(self):
+        if not self.current_user or not self.profile:
+            return
+        profile_manager.save_profile(self.current_user, self.profile)
 
     def change_scene(self, scene_name):
         from ma_nguon.man_choi.loading import LoadingScene
@@ -54,6 +70,9 @@ class Game:
         if scene_name == "game_over":
             from ma_nguon.man_choi.game_over import GameOverScene
             return GameOverScene(self, level_name, score)
+        if scene_name == "shop":
+            from ma_nguon.man_choi.shop import ShopScene
+            return ShopScene(self)
         return None
             
     def draw_player_health_bar(self, screen, player):
@@ -108,6 +127,28 @@ class Game:
                             (avatar_x - 2, avatar_y - 2, avatar_size + 4, avatar_size + 4), 2)
                 # Vẽ ảnh
                 screen.blit(avatar, (avatar_x, avatar_y))
+        # --- Mana bar (below health) ---
+        try:
+            max_mana = getattr(player, 'max_mana', 0)
+            mana = getattr(player, 'mana', 0)
+        except Exception:
+            max_mana = 0
+            mana = 0
+        if max_mana > 0:
+            mana_x = bar_x
+            mana_y = bar_y + bar_height + 8
+            mana_w = bar_width
+            mana_h = 18
+            pygame.draw.rect(screen, (30,30,30), (mana_x, mana_y, mana_w, mana_h))
+            if mana > 0:
+                pygame.draw.rect(screen, (50,150,255), (mana_x + 3, mana_y + 3, int((mana / max_mana) * (mana_w - 6)), mana_h - 6))
+            # mana text
+            mana_text = f"MP: {int(mana)}/{int(max_mana)}"
+            mana_surf = font.render(mana_text, True, (200, 200, 255))
+            screen.blit(mana_surf, (mana_x + mana_w // 2 - mana_surf.get_width() // 2, mana_y + mana_h // 2 - mana_surf.get_height() // 2))
+
+        # Note: Top-right gold/potions HUD intentionally removed.
+        # The centered ornate HUD is provided by the scene UI (`ActionButtonsUI.draw_hud`).
 
     def run(self):
         while self.running:
@@ -115,6 +156,30 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
+                # Global hotkeys for potions
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        if hasattr(self.current_scene, 'player') and self.current_scene.player:
+                            self.current_scene.player.use_health_potion()
+                    elif event.key == pygame.K_2:
+                        if hasattr(self.current_scene, 'player') and self.current_scene.player:
+                            self.current_scene.player.use_mana_potion()
+                    # Bind N -> health potion, M -> mana potion
+                    elif event.key == pygame.K_n:
+                        if hasattr(self.current_scene, 'player') and self.current_scene.player:
+                            used = self.current_scene.player.use_health_potion()
+                            if used:
+                                print("[INPUT] Used health potion (N)")
+                            else:
+                                print("[INPUT] No health potions available")
+                    elif event.key == pygame.K_m:
+                        if hasattr(self.current_scene, 'player') and self.current_scene.player:
+                            used = self.current_scene.player.use_mana_potion()
+                            if used:
+                                print("[INPUT] Used mana potion (M)")
+                            else:
+                                print("[INPUT] No mana potions available")
+
                 self.current_scene.handle_event(event)
             
             # Xóa màn hình trước khi vẽ frame mới

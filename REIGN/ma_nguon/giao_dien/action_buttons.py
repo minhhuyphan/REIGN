@@ -25,6 +25,9 @@ class ActionButtonsUI:
         self.hover_states = {}
         self.press_states = {}
         self.cooldown_states = {}
+        # HUD pickup animations (gold, hp, mp)
+        # Each entry: { 'start': ticks, 'amount': int, 'duration': ms }
+        self.hud_animations = {}
         
         # Button layout positions
         self.setup_button_layout()
@@ -125,19 +128,7 @@ class ActionButtonsUI:
                 "description": "Chạy"
             },
             
-            # Special buttons (top right) - Nút đặc biệt góc trên phải
-            "health": {
-                "rect": pygame.Rect(right_x - (self.button_size + self.button_spacing), right_y_start - (self.button_size + self.button_spacing), self.button_size, self.button_size),
-                "key_action": "health",
-                "category": "special",
-                "description": "Bình máu"
-            },
-            "energy": {
-                "rect": pygame.Rect(right_x, right_y_start - (self.button_size + self.button_spacing), self.button_size, self.button_size),
-                "key_action": "energy", 
-                "category": "special",
-                "description": "Bình năng lượng"
-            },
+            # Special button(s) (top right) - keep special ability only; health/energy moved to centered HUD
             "special": {
                 "rect": pygame.Rect(right_x - (self.button_size + self.button_spacing) * 2, right_y_start - (self.button_size + self.button_spacing), self.button_size, self.button_size),
                 "key_action": "special",
@@ -254,7 +245,7 @@ class ActionButtonsUI:
         for name in expired_cooldowns:
             del self.cooldown_states[name]
     
-    def draw(self, surface):
+    def draw(self, surface, player=None):
         """Vẽ tất cả action buttons"""
         current_time = pygame.time.get_ticks()
         
@@ -317,6 +308,162 @@ class ActionButtonsUI:
             # Draw cooldown indicator
             if is_on_cooldown:
                 self.draw_cooldown_indicator(surface, final_rect, button_name, current_time)
+
+        # Draw HUD (gold and potion counts) if player provided
+        if player:
+            try:
+                self.draw_hud(surface, player)
+            except Exception as e:
+                print(f"Error drawing HUD: {e}")
+
+    def draw_hud(self, surface, player):
+        """Draw a larger ornate HUD similar to the provided art sample.
+        The panel is centered near the top of the screen and shows:
+        - Large gold label (VÀNG: N)
+        - HP BÌNH count with icon in red
+        - MP BÌNH count with icon in blue
+        """
+        # Compact panel for top-right
+        panel_w = min(420, int(self.screen_width * 0.27))
+        panel_h = 72
+        x = self.screen_width - panel_w - 18
+        y = 12
+
+        # Create panel surface with rounded corners
+        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        # dark translucent inner
+        pygame.draw.rect(panel, (18, 18, 24, 220), (0, 0, panel_w, panel_h), border_radius=18)
+        # decorative inner border (slight metallic)
+        pygame.draw.rect(panel, (70, 70, 80, 100), (2, 2, panel_w-4, panel_h-4), 2, border_radius=16)
+
+        # subtle vignette on panel
+        vignette = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        for i in range(6):
+            alpha = int(12 * (6 - i))
+            pygame.draw.rect(vignette, (0,0,0,alpha), (i, i, panel_w-2*i, panel_h-2*i), border_radius=18-i)
+        panel.blit(vignette, (0,0), special_flags=pygame.BLEND_RGBA_SUB)
+
+        # Panel glow (outside)
+        glow = pygame.Surface((panel_w+40, panel_h+40), pygame.SRCALPHA)
+        pygame.draw.ellipse(glow, (20, 130, 180, 40), glow.get_rect())
+        surface.blit(glow, (x-20, y-20))
+
+        # Blit panel onto screen
+        surface.blit(panel, (x, y))
+
+        # Fonts (smaller for compact HUD)
+        try:
+            big_font = pygame.font.Font("Tai_nguyen/font/Fz-Donsky.ttf", 26)
+            label_font = pygame.font.Font("Tai_nguyen/font/Fz-Futurik.ttf", 16)
+        except:
+            big_font = pygame.font.Font(None, 26)
+            label_font = pygame.font.Font(None, 16)
+
+        # Draw gold label on left side of panel (compact)
+        gold = getattr(player, 'gold', 0)
+        gold_label = f"{gold}"
+        gold_surf = big_font.render(gold_label, True, (255, 210, 90))
+        # subtle shadow
+        shadow_surf = big_font.render(gold_label, True, (18, 12, 4))
+        shadow_surf.set_alpha(180)
+        surface.blit(shadow_surf, (x + 46 + 2, y + 16 + 2))
+        surface.blit(gold_surf, (x + 46, y + 16))
+
+        # Compact coin icon to the left
+        coin_x = x + 10
+        coin_y = y + panel_h//2
+        r = 10
+        pygame.draw.circle(surface, (212,175,55), (coin_x + r, coin_y), r)
+        pygame.draw.circle(surface, (255,230,140), (coin_x + r - 5, coin_y - 4), 4)
+        pygame.draw.circle(surface, (160,125,40), (coin_x + r, coin_y), r, 2)
+
+        # Right side: HP and MP groups (aligned right inside panel)
+        right_margin = 12
+        group_y = y + (panel_h - 36)//2
+        mp_x = x + panel_w - right_margin - 70
+        hp_x = mp_x - 96
+
+        health_img = self.button_images.get('health')
+        energy_img = self.button_images.get('energy')
+
+        # HP label (compact)
+        hp_count = player.potions.get('hp', 0) if hasattr(player, 'potions') else 0
+        hp_text = label_font.render(f"{hp_count}", True, (220, 80, 80))
+        if health_img:
+            hi = pygame.transform.scale(health_img, (28, 28))
+            surface.blit(hi, (hp_x, group_y))
+            surface.blit(hp_text, (hp_x + 34, group_y + 6))
+        else:
+            surface.blit(hp_text, (hp_x, group_y + 6))
+
+        # MP label (compact)
+        mp_count = player.potions.get('mp', 0) if hasattr(player, 'potions') else 0
+        mp_text = label_font.render(f"{mp_count}", True, (110, 160, 220))
+        if energy_img:
+            ei = pygame.transform.scale(energy_img, (28, 28))
+            surface.blit(ei, (mp_x, group_y))
+            surface.blit(mp_text, (mp_x + 34, group_y + 6))
+        else:
+            surface.blit(mp_text, (mp_x, group_y + 6))
+
+        # Keep displaying pickup animations (gold/hp/mp) as before
+        now = pygame.time.get_ticks()
+        # Gold pop animation uses panel coords (adjusted for compact panel)
+        g_anim = self.hud_animations.get('gold')
+        if g_anim:
+            elapsed = now - g_anim['start']
+            dur = g_anim.get('duration', 800)
+            if elapsed < dur:
+                progress = elapsed / dur
+                float_y = int(y + 6 - progress * 36)
+                alpha = int(255 * (1 - progress))
+                pop_font = big_font
+                pop_text = pop_font.render(f"+{g_anim.get('amount',0)}", True, (255, 230, 120))
+                shadow = pop_font.render(f"+{g_anim.get('amount',0)}", True, (0,0,0))
+                # shadow
+                shadow.set_alpha(alpha)
+                surface.blit(shadow, (x + 46, float_y + 2))
+                pop_text.set_alpha(alpha)
+                surface.blit(pop_text, (x + 46, float_y))
+            else:
+                del self.hud_animations['gold']
+
+        # HP/MP pill glow animations
+        hp_anim = self.hud_animations.get('hp')
+        if hp_anim:
+            elapsed = now - hp_anim['start']
+            dur = hp_anim.get('duration', 650)
+            if elapsed < dur:
+                prog = elapsed / dur
+                glow_alpha = int(180 * (1 - prog))
+                glow_surf = pygame.Surface((56, 38), pygame.SRCALPHA)
+                pygame.draw.ellipse(glow_surf, (220,100,100, glow_alpha), glow_surf.get_rect())
+                surface.blit(glow_surf, (hp_x - 4, group_y - 4))
+            else:
+                del self.hud_animations['hp']
+
+        mp_anim = self.hud_animations.get('mp')
+        if mp_anim:
+            elapsed = now - mp_anim['start']
+            dur = mp_anim.get('duration', 650)
+            if elapsed < dur:
+                prog = elapsed / dur
+                glow_alpha = int(180 * (1 - prog))
+                glow_surf = pygame.Surface((56, 38), pygame.SRCALPHA)
+                pygame.draw.ellipse(glow_surf, (80,160,230, glow_alpha), glow_surf.get_rect())
+                surface.blit(glow_surf, (mp_x - 4, group_y - 4))
+            else:
+                del self.hud_animations['mp']
+
+    def trigger_pickup_animation(self, kind, amount=1):
+        """Trigger a HUD pickup animation. kind in ['gold','hp','mp']"""
+        now = pygame.time.get_ticks()
+        if kind == 'gold':
+            self.hud_animations['gold'] = {'start': now, 'amount': amount, 'duration': 800}
+        elif kind == 'hp':
+            self.hud_animations['hp'] = {'start': now, 'amount': amount, 'duration': 700}
+        elif kind == 'mp':
+            self.hud_animations['mp'] = {'start': now, 'amount': amount, 'duration': 700}
     
     def draw_button_background(self, surface, rect, button_name, is_hovered, is_pressed, is_on_cooldown):
         """Vẽ background cho button"""

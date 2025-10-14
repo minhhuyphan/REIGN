@@ -8,8 +8,7 @@ class MenuScene:
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
 
-        # ✅ Danh sách menu đầy đủ
-        self.options = ["Màn 1", "Màn 2", "Map Mùa Thu", "Map Công Nghệ", "Hướng dẫn", "Cài đặt", "Thoát"]
+        self.options = ["Màn 1", "Màn 2", "Map mùa thu", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
 
         # Animation variables
         self.bounce_offset = 0
@@ -20,11 +19,11 @@ class MenuScene:
         # Load background image
         try:
             self.background = pygame.image.load("Tai_nguyen/hinh_anh/giao_dien/bg.png")
-            self.background = pygame.transform.scale(self.background, (1600, 700))  # Scale to screen size
+            self.background = pygame.transform.scale(self.background, (self.game.WIDTH, self.game.HEIGHT))  # Scale to screen size
         except pygame.error:
             try:
                 self.background = pygame.image.load("Tai_nguyen/hinh_anh/canh_nen/trang_sao.png")
-                self.background = pygame.transform.scale(self.background, (1600, 700))
+                self.background = pygame.transform.scale(self.background, (self.game.WIDTH, self.game.HEIGHT))
             except pygame.error:
                 self.background = None  # No background if both fail
 
@@ -45,15 +44,30 @@ class MenuScene:
                 elif self.selected == 2:
                     self.game.change_scene("autumn_levels")
                 elif self.selected == 3:
-                    # Chuyển trực tiếp đến Map Công Nghệ
-                    self.game.target_level = "map_cong_nghe"
-                    self.game.change_scene("character_select")
+
+                    # Cửa hàng
+                    self.game.change_scene("shop")
+
                 elif self.selected == 4:
                     self.game.change_scene("help")
                 elif self.selected == 5:
                     self.game.change_scene("settings")
                 elif self.selected == 6:
-                    self.game.running = False  # Thoát game
+
+                    # If a user is logged in, log them out; otherwise open login
+                    if hasattr(self.game, 'current_user') and self.game.current_user:
+                        # clear session and current user
+                        try:
+                            from ma_nguon.tien_ich import user_store
+                            user_store.clear_session()
+                        except Exception:
+                            pass
+                        self.game.current_user = None
+                        # update options text back to Thoát
+                        self.game.change_scene('menu')
+                    else:
+                        self.game.change_scene('login')
+
 
     def update(self):
         # Title scale animation
@@ -94,10 +108,36 @@ class MenuScene:
         title_y = 100
         screen.blit(title_scaled, (title_x, title_y))
 
-        # Draw menu options
-        for i, text in enumerate(self.options):
-            base_y = 230 + i * 60
-            option_y = base_y
+        # Show current user at top-right and gold balance
+        user_text = ''
+        gold_text = ''
+        if hasattr(self.game, 'current_user') and self.game.current_user:
+            user_text = f"Người chơi: {self.game.current_user}"
+            # load profile to get gold
+            try:
+                from ma_nguon.core import profile_manager
+                profile = profile_manager.load_profile(self.game.current_user)
+                gold_text = f"Vàng: {profile.get('gold', 0)}"
+            except Exception:
+                gold_text = ''
+        else:
+            user_text = "Chưa đăng nhập"
+        user_surf = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 20).render(user_text, True, (200,200,200))
+        screen.blit(user_surf, (screen.get_width() - user_surf.get_width() - 20, 20))
+        if gold_text:
+            gold_surf = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 18).render(gold_text, True, (255, 215, 0))
+            screen.blit(gold_surf, (screen.get_width() - gold_surf.get_width() - 20, 44))
+        
+        # Menu options with medieval-themed colors and bounce effect
+        # Compute options copy so we can modify the last label dynamically
+        options = list(self.options)
+        if hasattr(self.game, 'current_user') and self.game.current_user:
+            options[-1] = 'Đăng xuất'
+
+        for i, text in enumerate(options):
+            # Calculate base position
+            base_y = 250 + i*70
+
 
             # Màu sắc đặc biệt cho Map Công Nghệ
             if text == "Map Công Nghệ":

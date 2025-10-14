@@ -62,6 +62,9 @@ class LoadingScene:
         from ma_nguon.man_choi.help import HelpScene
         from ma_nguon.man_choi.victory import VictoryScene
         from ma_nguon.man_choi.settings import SettingsScene
+        from ma_nguon.man_choi.login import LoginScene
+        from ma_nguon.man_choi.register import RegisterScene
+        from ma_nguon.man_choi.shop import ShopScene
 
         if self.target_scene == "menu":
             self.game.current_scene = MenuScene(self.game)
@@ -89,18 +92,12 @@ class LoadingScene:
         elif self.target_scene == "settings":
             self.game.current_scene = SettingsScene(self.game)
 
-        elif self.target_scene == "map_cong_nghe":
-            # ✨ THÊM DÒNG NÀY - Xử lý Map Công Nghệ
-            try:
-                from ma_nguon.man_choi.map_cong_nghe import MapCongNgheScene
-                self.game.current_scene = MapCongNgheScene(self.game, player=self.game.selected_player)
-                print("Load Map Công Nghệ thành công!")
-            except Exception as e:
-                print(f"Lỗi load Map Công Nghệ: {e}")
-                # Fallback về menu nếu có lỗi
-                self.game.current_scene = MenuScene(self.game)
-        else:
-            # Fallback về menu nếu không tìm thấy scene
-            print(f"Không tìm thấy scene: {self.target_scene}")
-            self.game.current_scene = MenuScene(self.game)
-main
+        elif self.target_scene == "login":
+            self.game.current_scene = LoginScene(self.game)
+        elif self.target_scene == "register":
+            self.game.current_scene = RegisterScene(self.game)
+        elif self.target_scene == "shop":
+            self.game.current_scene = ShopScene(self.game)
+
+
+      
