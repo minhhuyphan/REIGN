@@ -1,0 +1,11 @@
+{
+    "enabled": true,
+    "button_size": 80,
+    "opacity": 0.8,
+    "position": "top_right",
+    "show_labels": true,
+    "animation_speed": 1.0,
+    "flash_enabled": true,
+    "glow_enabled": true,
+    "scale_effect": true
+}

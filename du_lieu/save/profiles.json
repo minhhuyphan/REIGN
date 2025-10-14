@@ -1,0 +1,18 @@
+{
+  "vinh": {
+    "gold": 5000,
+    "purchased_characters": [
+      "chien_binh"
+    ]
+  },
+  "tai": {
+    "gold": 999999,
+    "purchased_characters": [
+      "chien_binh",
+      "ninja",
+      "tho_san_quai_vat",
+      "vo_si",
+      "chien_than_lac_hong"
+    ]
+  }
+}
