@@ -33,7 +33,7 @@ class AutumnLevelsScene:
             (255, 215, 0),   # Vàng gold
             (255, 140, 0),   # Cam đậm
             (255, 69, 0),    # Đỏ cam
-            (218, 165, 32),  # Vàng đậm
+            (218, 165, 33),  # Vàng đậm
         ]
         
         for i in range(50):
