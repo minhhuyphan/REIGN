@@ -53,6 +53,8 @@ class Level1Scene:
         sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []
+        # Items dropped on the ground
+        self.items = []
         for i in range(15):  # Tăng số lượng quái vật
             x_pos = 600 + i * 300  # Đặt quái vật dọc theo map dài
             enemy = QuaiVat(x_pos, 300, folder_qv, sound_qv, color=(255,0,0), damage=10)
@@ -175,6 +177,13 @@ class Level1Scene:
                     # Cập nhật AI quái vật với vùng hoạt động
                     enemy.update(target=self.player)
                     alive_enemies.append(enemy)
+                else:
+                    # Collect drops from dead enemies into the scene
+                    if hasattr(enemy, 'spawned_drops') and enemy.spawned_drops:
+                        for it in enemy.spawned_drops:
+                            self.items.append(it)
+                            print(f"[DEBUG] Collected drop into scene: {type(it).__name__} at ({it.x},{it.y})")
+                        enemy.spawned_drops = []
             self.normal_enemies = alive_enemies
 
             # Spawn boss khi hết quái
@@ -310,6 +319,10 @@ class Level1Scene:
         info = self.font.render("Nhấn ESC để về menu", True, (255,255,0))
         screen.blit(info, (screen.get_width()//2 - info.get_width()//2, 120))
 
+        # Vẽ items rơi (với camera offset)
+        for item in self.items:
+            item.draw(screen, self.camera_x)
+
         # Vẽ quái vật (với camera offset)
         for enemy in self.normal_enemies:
             # Chỉ vẽ quái vật trong tầm nhìn camera
@@ -326,5 +339,34 @@ class Level1Scene:
         # Vẽ các lớp nền phía trước (che phủ nhân vật)
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
         
+        # --- Pickup items ---
+        remaining_items = []
+        for item in self.items:
+            if item.picked:
+                continue
+            item_rect = pygame.Rect(item.x, item.y, 24, 24)
+            player_rect = pygame.Rect(self.player.x, self.player.y, 50, 80)
+            if player_rect.colliderect(item_rect):
+                item.on_pickup(self.player)
+                # Trigger HUD pickup animation
+                if hasattr(self, 'action_buttons'):
+                    if type(item).__name__ == 'Gold':
+                        amount = getattr(item, 'amount', 0)
+                        self.action_buttons.trigger_pickup_animation('gold', amount)
+                        # persist to profile if user logged in
+                        if hasattr(self.game, 'current_user') and self.game.current_user:
+                            profile = self.game.profile or {}
+                            profile['gold'] = profile.get('gold', 0) + amount
+                            self.game.profile = profile
+                            self.game.save_current_profile()
+                    elif type(item).__name__ in ('HealthPotion', 'Health_Potion'):
+                        self.action_buttons.trigger_pickup_animation('hp', 1)
+                        # save potions if desired (not implemented here)
+                    elif type(item).__name__ in ('ManaPotion', 'Mana_Potion'):
+                        self.action_buttons.trigger_pickup_animation('mp', 1)
+            else:
+                remaining_items.append(item)
+        self.items = remaining_items
+
         # Vẽ Action Buttons UI (luôn ở trên cùng, không bị ảnh hưởng camera)
-        self.action_buttons.draw(screen)
+        self.action_buttons.draw(screen, player=self.player)

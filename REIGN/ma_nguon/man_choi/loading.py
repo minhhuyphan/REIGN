@@ -35,6 +35,9 @@ class LoadingScene:
         from ma_nguon.man_choi.help import HelpScene
         from ma_nguon.man_choi.victory import VictoryScene
         from ma_nguon.man_choi.settings import SettingsScene
+        from ma_nguon.man_choi.login import LoginScene
+        from ma_nguon.man_choi.register import RegisterScene
+        from ma_nguon.man_choi.shop import ShopScene
 
         if self.target_scene == "menu":
             self.game.current_scene = MenuScene(self.game)
@@ -60,3 +63,9 @@ class LoadingScene:
             self.game.current_scene = VictoryScene(self.game)
         elif self.target_scene == "settings":
             self.game.current_scene = SettingsScene(self.game)
+        elif self.target_scene == "login":
+            self.game.current_scene = LoginScene(self.game)
+        elif self.target_scene == "register":
+            self.game.current_scene = RegisterScene(self.game)
+        elif self.target_scene == "shop":
+            self.game.current_scene = ShopScene(self.game)

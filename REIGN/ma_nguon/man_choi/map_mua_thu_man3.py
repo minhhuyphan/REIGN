@@ -7,29 +7,32 @@ from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
+from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 
 
 class MapMuaThuMan3Scene:
     def __init__(self, game, player=None):
         self.game = game
-        self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
+        self.font = pygame.font.Font("Tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.counter = 0
-        
+        # On-screen action buttons UI
+        self.action_buttons = ActionButtonsUI(self.game.WIDTH, self.game.HEIGHT)
+
         # Khởi tạo hệ thống parallax background - phiên bản mùa thu
         self.parallax_bg = ParallaxBackground(self.game.WIDTH, self.game.HEIGHT, self.game.map_width)
-        
+
         # Thêm các lớp cảnh nền mùa thu từ xa đến gần
         # Lớp 1: Bầu trời mùa thu (ở xa nhất, gần như đứng yên)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/mapmuathu/bau_troi.png", speed_factor=0.05, y_pos=0)
-        
+        self.parallax_bg.add_layer("Tai_nguyen/hinh_anh/canh_nen/mapmuathu/bau_troi.png", speed_factor=0.05, y_pos=0)
+
         # Lớp 2: Mây (di chuyển rất chậm)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/mapmuathu/may.png", speed_factor=0.1, y_pos=50)
+        self.parallax_bg.add_layer("Tai_nguyen/hinh_anh/canh_nen/mapmuathu/may.png", speed_factor=0.1, y_pos=50)
 
         # Lớp 3: Núi xa (di chuyển chậm)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/mapmuathu/nui.png", speed_factor=0.2, y_pos=10, scale_factor=1.2)
+        self.parallax_bg.add_layer("Tai_nguyen/hinh_anh/canh_nen/mapmuathu/nui.png", speed_factor=0.2, y_pos=10, scale_factor=1.2)
 
         # Lớp 4: Mặt đất (di chuyển cùng tốc độ camera)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/mapmuathu/mat_dat.png", speed_factor=1.0, y_pos=230, repeat_x=True)
+        self.parallax_bg.add_layer("Tai_nguyen/hinh_anh/canh_nen/mapmuathu/mat_dat.png", speed_factor=1.0, y_pos=230, repeat_x=True)
 
         # Kiểm tra và sử dụng player truyền vào hoặc tạo mới
         if player:
@@ -51,22 +54,25 @@ class MapMuaThuMan3Scene:
                 "jump": pygame.K_w,
             }
             self.player = Character(100, 300, folder_nv, controls_p1, color=(0,255,0))
-    
+
         # Cập nhật các thuộc tính cho nhân vật
         self.player.damage = 15       # Damage đấm
         self.player.kick_damage = 20  # Damage đá
-    
+
         # MÀN 3: KHÓ NHẤT - NHIỀU QUÁI VÀ MẠNH
-        folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat")
+        folder_qv = os.path.join("Tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")
         sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []
-        
+
+        # Items dropped on the ground (collected from dead enemies)
+        self.items = []
+
         # Tạo 6 nhóm quái vật - nhiều nhất
         total_enemies = 0
         for group in range(6):
             group_x = 500 + group * 700  # Các nhóm gần nhau - dày đặc
-            
+
             # Mỗi nhóm có 3-4 quái vật - nhiều nhất
             num_enemies = random.randint(3, 4)
             total_enemies += num_enemies
@@ -87,27 +93,27 @@ class MapMuaThuMan3Scene:
             Boss2(self.game.map_width - 500, 300, folder_qv, sound_qv),
             Boss3(self.game.map_width - 200, 300, folder_qv, sound_qv),
         ]
-        
+
         # Boss mạnh nhất
         for boss in self.bosses:
             boss.hp = int(boss.hp * 1.5)  # 50% máu hơn
             boss.damage = int(boss.damage * 1.3)  # 30% sát thương hơn
             boss.speed = boss.speed * 1.2  # 20% tốc độ hơn
-            
+
         self.current_boss_index = 0
         self.current_boss = None
-        
+
         # Lưu số quái ban đầu để tính điểm
         self.initial_enemy_count = total_enemies
-        
+
         # Camera và giới hạn map
         self.camera_x = 0
         self.min_x = 0  # Giới hạn trái của map
         self.max_x = self.game.map_width - self.game.WIDTH  # Giới hạn phải của map
-        
+
         # Biến đếm đã tiêu diệt tất cả kẻ địch
         self.all_enemies_defeated = False
-        
+
         # Hiệu ứng lá rơi mùa thu mạnh mẽ (180 lá - nhiều nhất)
         self.falling_leaves = []
         leaf_colors = [
@@ -120,7 +126,7 @@ class MapMuaThuMan3Scene:
             (139, 69, 19),   # Nâu đậm
             (160, 82, 45),   # Nâu đỏ
         ]
-        
+
         # Nhiều lá nhất cho màn 3 - tạo cảm giác bão lá
         for i in range(180):
             self.falling_leaves.append({
@@ -134,9 +140,11 @@ class MapMuaThuMan3Scene:
                 'rotation': random.uniform(0, 360),
                 'rotation_speed': random.uniform(-3, 3)  # Xoay nhanh nhất
             })
-        
 
     def handle_event(self, event):
+        # Let UI handle clicks first
+        if self.action_buttons.handle_event(event, player=self.player):
+            return
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
@@ -157,6 +165,9 @@ class MapMuaThuMan3Scene:
 
     def update(self):
         keys = pygame.key.get_pressed()
+
+        # Update UI
+        self.action_buttons.update()
 
         # --- Cập nhật camera theo nhân vật ---
         screen_center_x = self.game.WIDTH // 2
@@ -197,6 +208,13 @@ class MapMuaThuMan3Scene:
                     # Cập nhật AI quái vật với vùng hoạt động
                     enemy.update(target=self.player)
                     alive_enemies.append(enemy)
+                else:
+                    # Nếu quái vừa chết và có drops, thu thập chúng vào scene
+                    if hasattr(enemy, 'spawned_drops') and enemy.spawned_drops:
+                        for it in enemy.spawned_drops:
+                            self.items.append(it)
+                            print(f"[DEBUG] Collected drop into scene: {type(it).__name__} at ({it.x},{it.y})")
+                        enemy.spawned_drops = []
             self.normal_enemies = alive_enemies
 
             # Spawn boss khi hết quái
@@ -350,14 +368,41 @@ class MapMuaThuMan3Scene:
         # Vẽ thông tin màn chơi (UI luôn cố định trên màn hình)
         text = self.font.render("Mùa Thu - Màn 3: Bão Lá Cuồng Nộ", True, (139, 0, 0))
         screen.blit(text, (screen.get_width()//2 - text.get_width()//2, 50))
-        info = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 30).render("Nhấn ESC để về menu", True, (160, 82, 45))
+        info = pygame.font.Font("Tai_nguyen/font/Fz-Donsky.ttf", 30).render("Nhấn ESC để về menu", True, (160, 82, 45))
         screen.blit(info, (screen.get_width()//2 - info.get_width()//2, 100))
+
+        # --- Pickup items ---
+        # Pickup items (simple AABB)
+        remaining_items = []
+        for item in self.items:
+            if item.picked:
+                continue
+            # simple pickup AABB check with player
+            item_rect = pygame.Rect(item.x, item.y, 24, 24)
+            player_rect = pygame.Rect(self.player.x, self.player.y, 50, 80)
+            if player_rect.colliderect(item_rect):
+                item.on_pickup(self.player)
+                # Trigger HUD pickup animation
+                if hasattr(self, 'action_buttons'):
+                    if type(item).__name__ == 'Gold':
+                        self.action_buttons.trigger_pickup_animation('gold', getattr(item, 'amount', 0))
+                    elif type(item).__name__ in ('HealthPotion', 'Health_Potion', 'HealthPotion'):
+                        self.action_buttons.trigger_pickup_animation('hp', 1)
+                    elif type(item).__name__ in ('ManaPotion', 'Mana_Potion', 'ManaPotion'):
+                        self.action_buttons.trigger_pickup_animation('mp', 1)
+            else:
+                remaining_items.append(item)
+        self.items = remaining_items
 
         # Vẽ quái vật (với camera offset)
         for enemy in self.normal_enemies:
             # Chỉ vẽ quái vật trong tầm nhìn camera
             if enemy.x + 150 >= self.camera_x and enemy.x - 150 <= self.camera_x + self.game.WIDTH:
                 enemy.draw(screen, self.camera_x)
+
+        # Vẽ items rơi (với camera offset)
+        for item in self.items:
+            item.draw(screen, self.camera_x)
 
         # Vẽ boss (với camera offset)
         if self.current_boss:
@@ -373,3 +418,6 @@ class MapMuaThuMan3Scene:
         
         # Vẽ các lớp nền phía trước (che phủ nhân vật) nếu có
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
+
+        # Draw UI buttons and HUD on top
+        self.action_buttons.draw(screen, player=self.player)

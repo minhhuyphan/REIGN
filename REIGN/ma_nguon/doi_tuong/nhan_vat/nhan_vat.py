@@ -26,6 +26,13 @@ class Character:
             self.kick_damage = 20
             self.defense = 2
             self.regen_hp = 0  # HP hồi mỗi giây
+        # Mana for skills
+        self.max_mana = stats.get('max_mana', 200) if stats else 200
+        self.mana = self.max_mana
+        self.mana_regen = stats.get('mana_regen', 5) if stats else 5  # per second
+        # Currency and potions
+        self.gold = 0
+        self.potions = {}
         
         # Controls - sử dụng settings manager nếu không có controls được truyền vào
         self.settings_manager = get_settings_manager()
@@ -204,6 +211,19 @@ class Character:
         # Hồi máu nhỏ
         if self.hp > 0:
             self.hp = min(self.hp + self.regen_hp, self.max_hp)
+        # Hồi mana theo thời gian (sử dụng ticks -> mỗi giây dựa trên clock tick)
+        # We'll use pygame time to increment mana smoothly
+        try:
+            dt = max(0, pygame.time.get_ticks() - getattr(self, '_last_mana_tick', 0))
+        except Exception:
+            dt = 0
+        if not hasattr(self, '_last_mana_tick'):
+            self._last_mana_tick = pygame.time.get_ticks()
+        now = pygame.time.get_ticks()
+        elapsed = (now - self._last_mana_tick) / 1000.0
+        if elapsed > 0:
+            self.mana = min(self.max_mana, self.mana + self.mana_regen * elapsed)
+            self._last_mana_tick = now
 
         # Nếu đã chết và animation ngã hết thì đứng yên
         if self.dead and self.frame == len(self.animations["nga"]) - 1:
@@ -316,6 +336,27 @@ class Character:
             surface.blit(img, (draw_x, self.y))
         
         # Không vẽ thanh máu ở đây nữa, nó sẽ được vẽ ở góc màn hình
+
+    # --- Mana and potion helpers ---
+    def spend_mana(self, amount):
+        if self.mana >= amount:
+            self.mana -= amount
+            return True
+        return False
+
+    def use_health_potion(self):
+        if self.potions.get('hp', 0) > 0:
+            self.potions['hp'] -= 1
+            self.hp = min(self.max_hp, self.hp + 200)
+            return True
+        return False
+
+    def use_mana_potion(self):
+        if self.potions.get('mp', 0) > 0:
+            self.potions['mp'] -= 1
+            self.mana = min(self.max_mana, self.mana + 150)
+            return True
+        return False
 
     def take_damage(self, damage, attacker_flip):
         # Nếu đang đỡ, giảm damage

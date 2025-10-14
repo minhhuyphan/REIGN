@@ -213,7 +213,36 @@ class QuaiVat:
                 self.sounds["chet"].play()
             # Té ngược chiều người đánh
             self.knockback_speed = -10 if attacker_flip == False else 10
+            # generate drops and store them for the scene to collect
+            try:
+                self.spawned_drops = self.spawn_drops()
+            except Exception:
+                self.spawned_drops = []
 
+    def spawn_drops(self):
+        """Return a list of item instances dropped at the enemy position."""
+        drops = []
+        try:
+            from ma_nguon.doi_tuong.items import Gold, HealthPotion, ManaPotion
+        except Exception:
+            return drops
+
+        # Always drop small gold
+        amount = random.randint(5, 20)
+        drops.append(Gold(self.x, self.y, amount))
+        print(f"[DEBUG] QuaiVat at ({self.x},{self.y}) will drop Gold={amount}")
+
+        # Small chance for health potion (10%)
+        if random.random() < 0.10:
+            drops.append(HealthPotion(self.x + random.randint(-20,20), self.y, heal=random.randint(100, 300)))
+            print(f"[DEBUG] QuaiVat at ({self.x},{self.y}) will drop HealthPotion")
+
+        # Small chance for mana potion (15%)
+        if random.random() < 0.15:
+            drops.append(ManaPotion(self.x + random.randint(-20,20), self.y, mana=random.randint(50, 150)))
+            print(f"[DEBUG] QuaiVat at ({self.x},{self.y}) will drop ManaPotion")
+
+        return drops
     def draw(self, screen, camera_x=0):
         # Tính toán vị trí vẽ sau khi trừ camera offset
         draw_x = self.x - camera_x

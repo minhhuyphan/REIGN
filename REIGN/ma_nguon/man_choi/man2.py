@@ -121,6 +121,8 @@ class Level2Scene:
                 'speed': random.randint(10, 20),
                 'length': random.randint(5, 15)
             })
+        # Items dropped on the ground
+        self.items = []
         
 
     def handle_event(self, event):
@@ -185,6 +187,13 @@ class Level2Scene:
                     # Cập nhật AI quái vật với vùng hoạt động
                     enemy.update(target=self.player)
                     alive_enemies.append(enemy)
+                else:
+                    # Collect drops from dead enemies into the scene
+                    if hasattr(enemy, 'spawned_drops') and enemy.spawned_drops:
+                        for it in enemy.spawned_drops:
+                            self.items.append(it)
+                            print(f"[DEBUG] Collected drop into scene: {type(it).__name__} at ({it.x},{it.y})")
+                        enemy.spawned_drops = []
             self.normal_enemies = alive_enemies
 
             # Spawn boss khi hết quái
@@ -340,4 +349,31 @@ class Level2Scene:
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
         
         # Vẽ Action Buttons UI (luôn ở trên cùng, không bị ảnh hưởng camera)
-        self.action_buttons.draw(screen)
+        # --- Pickup items ---
+        remaining_items = []
+        for item in self.items:
+            if item.picked:
+                continue
+            item_rect = pygame.Rect(item.x, item.y, 24, 24)
+            player_rect = pygame.Rect(self.player.x, self.player.y, 50, 80)
+            if player_rect.colliderect(item_rect):
+                item.on_pickup(self.player)
+                # Trigger HUD pickup animation
+                if hasattr(self, 'action_buttons'):
+                    if type(item).__name__ == 'Gold':
+                        amount = getattr(item, 'amount', 0)
+                        self.action_buttons.trigger_pickup_animation('gold', amount)
+                        if hasattr(self.game, 'current_user') and self.game.current_user:
+                            profile = self.game.profile or {}
+                            profile['gold'] = profile.get('gold', 0) + amount
+                            self.game.profile = profile
+                            self.game.save_current_profile()
+                    elif type(item).__name__ in ('HealthPotion', 'Health_Potion'):
+                        self.action_buttons.trigger_pickup_animation('hp', 1)
+                    elif type(item).__name__ in ('ManaPotion', 'Mana_Potion'):
+                        self.action_buttons.trigger_pickup_animation('mp', 1)
+            else:
+                remaining_items.append(item)
+        self.items = remaining_items
+
+        self.action_buttons.draw(screen, player=self.player)

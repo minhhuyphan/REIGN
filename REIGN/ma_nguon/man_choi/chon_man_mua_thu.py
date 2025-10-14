@@ -20,7 +20,7 @@ class AutumnLevelsScene:
         # Load background image
         try:
             self.background = pygame.image.load("Tai_nguyen/hinh_anh/giao_dien/bg.png")
-            self.background = pygame.transform.scale(self.background, (1600, 700))
+            self.background = pygame.transform.scale(self.background, (1600, 820))
         except pygame.error:
             try:
                 self.background = pygame.image.load("Tai_nguyen/hinh_anh/canh_nen/mapmuathu/bau_troi.png")
