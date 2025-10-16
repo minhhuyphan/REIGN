@@ -37,12 +37,14 @@ class MapMuaThuMan1Scene:
 
         # Kiểm tra và sử dụng player truyền vào hoặc tạo mới
         if player:
+            # Preserve incoming player stats; avoid overwriting equipment bonuses
             self.player = player
-            # Đặt lại vị trí và hồi đầy máu cho màn mới
             self.player.x = 100
             self.player.y = 300
             self.player.base_y = 300
-            self.player.hp = self.player.max_hp  # Hồi đầy máu
+            if hasattr(self.player, 'hp') and hasattr(self.player, 'max_hp'):
+                self.player.hp = min(self.player.hp, self.player.max_hp)
+            print(f"[MapMuaThuMan1] Received player with stats: HP={self.player.hp}, DMG={self.player.damage}, SPD={self.player.speed}")
         else:
             # Code tạo player mới
             folder_nv = os.path.join("Tai_nguyen", "hinh_anh", "nhan_vat")
@@ -55,10 +57,10 @@ class MapMuaThuMan1Scene:
                 "jump": pygame.K_w,
             }
             self.player = Character(100, 300, folder_nv, controls_p1, color=(0,255,0))
-    
-        # Cập nhật các thuộc tính cho nhân vật
-        self.player.damage = 15       # Damage đấm
-        self.player.kick_damage = 20  # Damage đá
+            # Chỉ set stats mặc định khi tạo player MỚI
+            self.player.damage = 15       # Damage đấm
+            self.player.kick_damage = 20  # Damage đá
+            print(f"[MapMuaThuMan1] Created new player with default stats")
     
         # MÀNT 1: ÍT QUÁI - DỄ NHẤT
         folder_qv = os.path.join("Tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")

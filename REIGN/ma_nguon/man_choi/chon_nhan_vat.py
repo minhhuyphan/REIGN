@@ -2,6 +2,9 @@ import pygame
 import os
 from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.core import profile_manager
+from ma_nguon.core.equipment_manager_global import get_global_equipment_manager
+from ma_nguon.doi_tuong.equipment import EquipmentManager
+from ma_nguon.core.character_data import get_all_characters
 
 class CharacterSelectScene:
     def __init__(self, game):
@@ -12,56 +15,14 @@ class CharacterSelectScene:
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.font_small = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 30)
 
-        # Each character has an id and price (price=0 means free)
-        self.characters = [
-            {
-                "id": "chien_binh",
-                "name": "Chiến binh",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/chien_binh",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/chien_binh/dung_yen/0.png"),
-                "stats": {"hp": 500, "speed": 5, "damage": 30, "defense": 2},
-                "color": (0, 255, 0),
-                "price": 0
-            },
-            {
-                "id": "ninja",
-                "name": "Ninja",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/ninja",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/ninja/dung_yen/0.png"),
-                "stats": {"hp": 350, "speed": 8, "damage": 25, "defense": 1},
-                "color": (0, 0, 255),
-                "price": 300
-            },
-            {
-                "id": "vo_si",
-                "name": "Võ sĩ",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/vo_si",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/vo_si/dung_yen/0.png"),
-                "stats": {"hp": 1000, "speed": 4, "damage": 100, "defense": 3},
-                "color": (255, 0, 0),
-                "price": 400
-            },
-            {
-                "id": "chien_than_lac_hong",
-                "name": "Chiến Thần Lạc Hồng",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong/dung_yen/0.png"),
-                # Updated stats as requested
-                "stats": {"hp": 2000, "speed": 4, "damage": 120, "defense": 8},
-                "color": (255, 200, 0),
-                "price": 500
-            },
-            {
-                "id": "tho_san_quai_vat",
-                "name": "Thợ Săn Quái Vật",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/tho_san_quai_vat",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/tho_san_quai_vat/dung_yen/0.png"),
-                "stats": {"hp": 450, "speed": 7, "damage": 35, "defense": 2},
-                "color": (128, 0, 128),
-                "price": 250
-            },
-          
-        ]
+        # Load characters from central character data
+        self.characters = get_all_characters()
+        
+        # Add preview images
+        for char in self.characters:
+            preview_path = f"{char['folder']}/dung_yen/0.png"
+            char['preview'] = self._load_preview(preview_path)
+        
         self.selected_idx = 0
         self.confirm = False
         self.preview_scale = 0.5  # Tỉ lệ phóng to ảnh preview
@@ -72,6 +33,47 @@ class CharacterSelectScene:
         self.dragging = False
         self.drag_start_x = 0
         self.scroll_start = 0
+        
+        # Load equipment info for each character
+        self._load_character_equipment_stats()
+        
+    def _load_character_equipment_stats(self):
+        """Load và tính toán stats với trang bị cho mỗi nhân vật"""
+        global_eq_mgr = get_global_equipment_manager()
+        eq_mgr = EquipmentManager()
+        
+        for char in self.characters:
+            char_id = char["id"]
+            equipped = global_eq_mgr.get_all_equipment(char_id)
+            
+            # Calculate bonus stats from equipment
+            bonus_hp = 0
+            bonus_damage = 0
+            bonus_speed = 0
+            equipped_items = []
+            
+            for eq_type in ["weapon", "armor", "boots"]:
+                eq_id = equipped.get(eq_type)
+                if eq_id and eq_id in eq_mgr.all_equipment:
+                    equipment = eq_mgr.all_equipment[eq_id]
+                    equipped_items.append(equipment.name)
+                    
+                    # Add stats bonus
+                    if "hp" in equipment.stats:
+                        bonus_hp += equipment.stats["hp"]
+                    if "damage" in equipment.stats:
+                        bonus_damage += equipment.stats["damage"]
+                    if "speed" in equipment.stats:
+                        bonus_speed += equipment.stats["speed"]
+            
+            # Store equipment info in character data
+            char["equipment_bonus"] = {
+                "hp": bonus_hp,
+                "damage": bonus_damage,
+                "speed": bonus_speed
+            }
+            char["equipped_items"] = equipped_items
+            char["has_equipment"] = len(equipped_items) > 0
         
     def _load_preview(self, path):
         try:
@@ -137,11 +139,30 @@ class CharacterSelectScene:
         player = Character(100, 300, selected["folder"], color=selected["color"])
         
         # Cập nhật các thuộc tính từ stats
-        player.hp = selected["stats"]["hp"]
-        player.max_hp = selected["stats"]["hp"]
-        player.speed = selected["stats"]["speed"]
-        player.damage = selected["stats"]["damage"]
-        player.defense = selected["stats"]["defense"]
+        stats = selected["stats"]
+        player.hp = stats["hp"]
+        player.max_hp = stats["hp"]
+        player.speed = stats["speed"]
+        player.damage = stats["damage"]
+        player.defense = stats["defense"]
+        
+        # Set kick_damage if it exists in stats
+        if "kick_damage" in stats:
+            player.kick_damage = stats["kick_damage"]
+        
+        # Apply saved equipment to this character
+        global_eq_manager = get_global_equipment_manager()
+        if not hasattr(self.game, 'equipment_manager'):
+            self.game.equipment_manager = EquipmentManager()
+        
+        global_eq_manager.apply_equipment_to_character(
+            player,
+            selected["id"],
+            self.game.equipment_manager
+        )
+        
+        print(f"[CharacterSelect] Created character: {selected['name']} (ID: {selected['id']}) with equipment")
+        print(f"  Stats: HP={player.hp}, DMG={player.damage}, SPD={player.speed}, DEF={player.defense}")
         
         # Lưu nhân vật đã chọn vào game
         # Lưu nhân vật đã chọn vào game
@@ -276,26 +297,58 @@ class CharacterSelectScene:
             # Vẽ thông số với font nhỏ hơn
             stats_y = pos_y + card_h - 100
             stats = char["stats"]
+            bonus = char.get("equipment_bonus", {"hp": 0, "damage": 0, "speed": 0})
             font_stats = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 18)  # Font nhỏ hơn
             
             # Draw stats aligned inside the card
             stat_x = pos_x - card_w // 2 + 12
-            hp_text = font_stats.render(f"HP: {stats['hp']}", True, (255, 100, 100))
-            screen.blit(hp_text, (stat_x, stats_y))
+            
+            # HP với bonus
+            total_hp = stats['hp'] + bonus['hp']
+            if bonus['hp'] > 0:
+                hp_text = font_stats.render(f"HP: {total_hp} ", True, (100, 255, 100))
+                hp_bonus = font_stats.render(f"(+{bonus['hp']})", True, (50, 200, 50))
+                screen.blit(hp_text, (stat_x, stats_y))
+                screen.blit(hp_bonus, (stat_x + hp_text.get_width(), stats_y))
+            else:
+                hp_text = font_stats.render(f"HP: {stats['hp']}", True, (255, 100, 100))
+                screen.blit(hp_text, (stat_x, stats_y))
 
-            speed_text = font_stats.render(f"Tốc độ: {stats['speed']}", True, (100, 255, 100))
-            screen.blit(speed_text, (stat_x, stats_y + 22))
+            # Speed với bonus
+            total_speed = stats['speed'] + bonus['speed']
+            if bonus['speed'] > 0:
+                speed_text = font_stats.render(f"Tốc độ: {total_speed} ", True, (100, 255, 255))
+                speed_bonus = font_stats.render(f"(+{bonus['speed']})", True, (50, 200, 200))
+                screen.blit(speed_text, (stat_x, stats_y + 22))
+                screen.blit(speed_bonus, (stat_x + speed_text.get_width(), stats_y + 22))
+            else:
+                speed_text = font_stats.render(f"Tốc độ: {stats['speed']}", True, (100, 255, 100))
+                screen.blit(speed_text, (stat_x, stats_y + 22))
 
-            dmg_text = font_stats.render(f"ST: {stats['damage']}", True, (255, 255, 100))
-            screen.blit(dmg_text, (stat_x, stats_y + 44))
+            # Damage với bonus
+            total_damage = stats['damage'] + bonus['damage']
+            if bonus['damage'] > 0:
+                dmg_text = font_stats.render(f"ST: {total_damage} ", True, (255, 255, 100))
+                dmg_bonus = font_stats.render(f"(+{bonus['damage']})", True, (200, 200, 50))
+                screen.blit(dmg_text, (stat_x, stats_y + 44))
+                screen.blit(dmg_bonus, (stat_x + dmg_text.get_width(), stats_y + 44))
+            else:
+                dmg_text = font_stats.render(f"ST: {stats['damage']}", True, (255, 255, 100))
+                screen.blit(dmg_text, (stat_x, stats_y + 44))
 
             def_text = font_stats.render(f"PT: {stats['defense']}", True, (100, 100, 255))
             screen.blit(def_text, (stat_x, stats_y + 66))
             
+            # Hiển thị icon trang bị nếu có
+            if char.get("has_equipment", False):
+                equipment_icon_font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 20)
+                equipment_icon = equipment_icon_font.render("⚔", True, (255, 215, 0))
+                screen.blit(equipment_icon, (pos_x + card_w // 2 - 30, pos_y + 5))
+            
             # Thêm chỉ báo đặc biệt chỉ cho Chiến Thần Lạc Hồng
             if cid == 'chien_than_lac_hong':
                 special_text = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 16).render("★ HUYỀN THOẠI ★", True, (255, 0, 127))
-                screen.blit(special_text, (pos_x - special_text.get_width() // 2, stats_y + 40))
+                screen.blit(special_text, (pos_x - special_text.get_width() // 2, pos_y + 10))
 
             if not owned:
                 # darken the entire character card to indicate locked

@@ -1,0 +1,22 @@
+{
+  "ninja": {
+    "weapon": "kiem_rong",
+    "armor": "giap_anh_sang",
+    "boots": "giay_thien_than"
+  },
+  "chien_binh": {
+    "weapon": "cung_bang_lam",
+    "armor": "giap_anh_sang",
+    "boots": "giay_thien_than"
+  },
+  "chien_than_lac_hong": {
+    "weapon": "kiem_rong",
+    "armor": "giap_anh_sang",
+    "boots": "giay_thien_than"
+  },
+  "vo_si": {
+    "weapon": "cung_bang_lam",
+    "armor": "giap_anh_sang",
+    "boots": "giay_thien_than"
+  }
+}

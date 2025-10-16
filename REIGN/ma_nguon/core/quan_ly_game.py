@@ -59,6 +59,16 @@ class Game:
 
     def change_scene(self, scene_name):
         from ma_nguon.man_choi.loading import LoadingScene
+        # Debug: print selected_player stats when changing scene to help trace equipment persistence
+        try:
+            sp = getattr(self, 'selected_player', None)
+            if sp:
+                print(f"[DEBUG change_scene] Changing to {scene_name} with selected_player: HP={getattr(sp,'hp',None)}, max_hp={getattr(sp,'max_hp',None)}, DMG={getattr(sp,'damage',None)}, SPD={getattr(sp,'speed',None)}")
+            else:
+                print(f"[DEBUG change_scene] Changing to {scene_name} with no selected_player")
+        except Exception:
+            print(f"[DEBUG change_scene] Changing to {scene_name} (failed to read selected_player)")
+
         if scene_name == "exit":
             self.running = False
         elif scene_name == "game_over":
@@ -81,6 +91,9 @@ class Game:
         if scene_name == "shop":
             from ma_nguon.man_choi.shop import ShopScene
             return ShopScene(self)
+        if scene_name == "spin":
+            from ma_nguon.man_choi.spin import SpinScene
+            return SpinScene(self)
         return None
             
     def draw_player_health_bar(self, screen, player):

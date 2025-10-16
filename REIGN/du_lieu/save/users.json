@@ -6,5 +6,9 @@
   "phuc": {
     "salt": "ba9e4df35a4936a261f7f4a677625f24",
     "pw_hash": "71deb36d219e4328e06217c8fb1022bbb909806354a03472b01de01057f10340"
+  },
+  "huy": {
+    "salt": "00f9702dc249bdd8e2afa0745998bcb7",
+    "pw_hash": "fdd1f03ded18dbc40bf0b47c9aa42e8df84801ce984559fc71d125d89cdc7187"
   }
 }

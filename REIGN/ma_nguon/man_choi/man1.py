@@ -41,13 +41,6 @@ class Level1Scene:
         # Lớp 7: Cây gần (phía trước nhân vật, di chuyển nhanh hơn camera)
         self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/cay_gan.png", speed_factor=1.2, y_pos=400, scale_factor=1.5, above_player=True)
 
-        # Khởi tạo player
-        folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat")
-        # Không truyền controls để Character tự lấy từ settings
-        self.player = Character(100, 300, folder_nv, color=(0,255,0))
-        self.player.damage = 15       # Damage đấm
-        self.player.kick_damage = 20  # Damage đá
-
         # Khởi tạo quái vật thường dọc theo map dài
         folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")
         sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
@@ -83,10 +76,15 @@ class Level1Scene:
         self.max_x = self.game.map_width - self.game.WIDTH  # Giới hạn phải của map
         # Thay đổi từ dòng 124-137
         if player:
-            self.player = player  # lấy player từ màn chọn
+            # Use incoming player instance and DO NOT overwrite its stats (equipment bonuses preserved)
+            self.player = player
             self.player.x = 100
             self.player.y = 300
             self.player.base_y = 300
+            # Ensure current HP does not exceed max (in case equipment changed max_hp)
+            if hasattr(self.player, 'hp') and hasattr(self.player, 'max_hp'):
+                self.player.hp = min(self.player.hp, self.player.max_hp)
+            print(f"[Man1] Received player with stats: HP={self.player.hp}, DMG={self.player.damage}, SPD={self.player.speed}")
         else:
             folder_nv = "tai_nguyen/hinh_anh/nhan_vat"
             # Không truyền controls để Character tự lấy từ settings
@@ -94,6 +92,7 @@ class Level1Scene:
             self.player.base_y = 300
             self.player.damage = 15
             self.player.kick_damage = 20
+            print(f"[Man1] Created new player with default stats")
         
         # Khởi tạo Action Buttons UI  
         self.action_buttons = ActionButtonsUI(self.game.WIDTH, self.game.HEIGHT)

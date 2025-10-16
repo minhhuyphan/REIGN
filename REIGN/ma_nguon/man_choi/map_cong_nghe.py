@@ -63,10 +63,14 @@ class MapCongNgheScene:
             # Player setup - dùng try/except để không crash nếu asset lỗi
             try:
                 if player:
+                    # Preserve incoming player stats and only set position/grounding
                     self.player = player
                     self.player.x = 100
                     self.player.y = 400
                     self.player.base_y = 400
+                    if hasattr(self.player, 'hp') and hasattr(self.player, 'max_hp'):
+                        self.player.hp = min(self.player.hp, self.player.max_hp)
+                    print(f"[MapCongNghe] Received player with stats: HP={self.player.hp}, DMG={self.player.damage}, SPD={self.player.speed}")
                 else:
                     folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat", "chien_binh")
                     controls_p1 = {
@@ -78,9 +82,10 @@ class MapCongNgheScene:
                         "jump": pygame.K_w,
                     }
                     self.player = Character(100, 400, folder_nv, controls_p1, color=(0,255,255))
-                # Cập nhật damage cho môi trường công nghệ
-                self.player.damage = 18
-                self.player.kick_damage = 23
+                    # Chỉ set stats mặc định khi tạo player MỚI
+                    self.player.damage = 18
+                    self.player.kick_damage = 23
+                    print(f"[MapCongNghe] Created new player with default stats")
             except Exception as e:
                 tb = traceback.format_exc()
                 print("[ERROR] Player init failed:", e)

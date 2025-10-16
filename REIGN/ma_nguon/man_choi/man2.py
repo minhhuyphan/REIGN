@@ -43,20 +43,23 @@ class Level2Scene:
 
         # Di chuyển kiểm tra player lên đây, trước khi tạo player mới
         if player:
+            # Use incoming player instance and preserve stats from character select / equipment
             self.player = player
-            # Đặt lại vị trí
             self.player.x = 100
             self.player.y = 300
             self.player.base_y = 300
+            if hasattr(self.player, 'hp') and hasattr(self.player, 'max_hp'):
+                self.player.hp = min(self.player.hp, self.player.max_hp)
+            print(f"[Man2] Received player with stats: HP={self.player.hp}, DMG={self.player.damage}, SPD={self.player.speed}")
         else:
             # Code tạo player mới
             folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat")
             # Không truyền controls để Character tự lấy từ settings
             self.player = Character(100, 300, folder_nv, color=(0,255,0))
-    
-        # Cập nhật các thuộc tính cho nhân vật
-        self.player.damage = 15       # Damage đấm
-        self.player.kick_damage = 20  # Damage đá
+            # Chỉ set stats mặc định khi tạo player MỚI
+            self.player.damage = 15       # Damage đấm
+            self.player.kick_damage = 20  # Damage đá
+            print(f"[Man2] Created new player with default stats")
         
         # Khởi tạo Action Buttons UI
         self.action_buttons = ActionButtonsUI(self.game.WIDTH, self.game.HEIGHT)

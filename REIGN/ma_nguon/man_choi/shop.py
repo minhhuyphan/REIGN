@@ -32,6 +32,22 @@ class ShopScene:
         self.msg_timer = 0
         self.selected_idx = 0
         self.input_cooldown = 0
+        # Spin wheel state
+        # simple equipment pool for spin rewards (ids matching EquipmentManager.all_equipment keys)
+        self.equipment_pool = [
+            'cung_bang_lam',
+            'kiem_rong',
+            'giap_anh_sang',
+            'giay_thien_than'
+        ]
+        self.spin_cost = 200  # vàng để quay
+        self.spinning = False
+        self.spin_timer = 0
+        self.spin_duration = 90  # frames
+        self.spin_result = None
+        self.spin_highlight_idx = 0
+        # navigation button rects
+        self.go_spin_rect = None
 
     def create_buttons(self):
         # deprecated
@@ -57,6 +73,10 @@ class ShopScene:
                     self.buy_by_index(self.selected_idx)
                     self.input_cooldown = 8
                     return
+                elif event.key == pygame.K_p:
+                    # press P to open spin (quick key)
+                    self.start_spin()
+                    return
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
             # check buy buttons
@@ -65,6 +85,10 @@ class ShopScene:
                     self.buy_by_index(idx)
                     self.selected_idx = idx
                     return
+            # check navigation to SpinScene
+            if getattr(self, 'go_spin_rect', None) and self.go_spin_rect.collidepoint(mx, my):
+                self.game.change_scene('spin')
+                return
 
     def buy_character(self, cid):
         # legacy entrypoint (not used)
@@ -96,6 +120,57 @@ class ShopScene:
         self.game.profile = profile
         self._set_message(f'Mua thành công {item.get("name")}', 180)
 
+    # --- Spin wheel methods ---
+    def start_spin(self):
+        user = getattr(self.game, 'current_user', None)
+        if not user:
+            self._set_message('Vui lòng đăng nhập để quay', 180)
+            return
+        profile = profile_manager.load_profile(user)
+        gold = profile.get('gold', 0)
+        if gold < self.spin_cost:
+            self._set_message('Không đủ vàng để quay', 180)
+            return
+        # Deduct gold immediately
+        profile['gold'] = gold - self.spin_cost
+        # Save and update in-memory
+        profile_manager.save_profile(user, profile)
+        self.game.profile = profile
+        # Choose reward now so we can animate to it
+        import random
+        reward = random.choice(self.equipment_pool)
+        self.spin_result = reward
+        # Start spin animation (deterministic end)
+        self.spinning = True
+        self.spin_timer = 0
+        self.spin_start_idx = self.spin_highlight_idx
+        # compute total steps so the pointer will land on reward at end
+        try:
+            reward_idx = self.equipment_pool.index(reward)
+        except ValueError:
+            reward_idx = 0
+        pool_len = max(1, len(self.equipment_pool))
+        offset = (reward_idx - self.spin_start_idx) % pool_len
+        self.spin_total_steps = pool_len * 4 + offset
+        self.spin_duration = 90
+        self._set_message('Đang quay...', 60)
+
+    def finish_spin(self):
+        # persist reward (self.spin_result chosen at start_spin)
+        user = getattr(self.game, 'current_user', None)
+        if user:
+            profile = profile_manager.load_profile(user)
+            owned = profile.get('owned_equipment', [])
+            reward = self.spin_result
+            if reward and reward not in owned:
+                owned.append(reward)
+            profile['owned_equipment'] = owned
+            profile_manager.save_profile(user, profile)
+            self.game.profile = profile
+        # show message
+        self._set_message(f'Bạn nhận được: {self.spin_result}', 240)
+        self.spinning = False
+
     def _set_message(self, text: str, frames: int = 120):
         self.message = text
         self.msg_timer = frames
@@ -109,6 +184,17 @@ class ShopScene:
         # input cooldown for keyboard navigation
         if getattr(self, 'input_cooldown', 0) > 0:
             self.input_cooldown -= 1
+        # handle spinning animation
+        if getattr(self, 'spinning', False):
+            self.spin_timer += 1
+            t = min(1.0, float(self.spin_timer) / max(1, getattr(self, 'spin_duration', 90)))
+            # linear progress over total steps
+            total = getattr(self, 'spin_total_steps', len(self.equipment_pool))
+            step = int(t * total)
+            self.spin_highlight_idx = (getattr(self, 'spin_start_idx', 0) + step) % max(1, len(self.equipment_pool))
+            if self.spin_timer >= getattr(self, 'spin_duration', 90):
+                # finish
+                self.finish_spin()
 
     def draw(self, screen):
         screen.fill((30, 30, 60))
@@ -123,6 +209,12 @@ class ShopScene:
             gold = profile.get('gold', 0)
         gold_text = self.font.render(f'Vàng: {gold}', True, (255, 255, 0))
         screen.blit(gold_text, (screen.get_width() - gold_text.get_width() - 40, 20))
+
+        # Navigation: Go to Spin Scene button
+        self.go_spin_rect = pygame.Rect(40, 70, 140, 36)
+        pygame.draw.rect(screen, (70, 130, 200), self.go_spin_rect, border_radius=6)
+        spin_nav_label = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 20).render('Vòng Quay', True, (255,255,255))
+        screen.blit(spin_nav_label, (self.go_spin_rect.x + self.go_spin_rect.width//2 - spin_nav_label.get_width()//2, self.go_spin_rect.y + 6))
 
         # Draw character grid similar to selection screen
         num = len(self.catalog)
@@ -186,3 +278,5 @@ class ShopScene:
         if self.message:
             msg_surf = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 24).render(self.message, True, (255,255,255))
             screen.blit(msg_surf, (screen.get_width()//2 - msg_surf.get_width()//2, screen.get_height()-80))
+
+        # Note: spin wheel UI removed from shop; use 'Vòng Quay' button to go to dedicated SpinScene.

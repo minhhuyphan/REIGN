@@ -31,7 +31,10 @@ def load_profile(username: str) -> Dict[str, Any]:
     profiles = load_profiles()
     default = {
         'gold': 0,
-        'purchased_characters': ['chien_binh']  # grant free warrior by default
+        'purchased_characters': ['chien_binh'],  # grant free warrior by default
+        # owned_equipment stores equipment ids the player owns (by default empty)
+        'owned_equipment': [],
+        # For backward compatibility older profiles may lack these keys
     }
     return profiles.get(username, default)
 

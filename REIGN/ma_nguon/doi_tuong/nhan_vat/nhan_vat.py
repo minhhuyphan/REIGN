@@ -34,6 +34,18 @@ class Character:
         self.gold = 0
         self.potions = {}
         
+        # Equipment stats (base stats without equipment bonuses)
+        self.base_damage = self.damage
+        self.base_kick_damage = self.kick_damage
+        self.base_speed = self.speed
+        self.base_defense = self.defense
+        self.base_max_hp = self.max_hp
+        
+        # Equipment effects tracking
+        self.active_effects = []  # List of active equipment effects
+        self.revive_available = True  # For armor revive effect
+        self.equipped_armor_has_revive = False  # Flag to check if armor has revive
+        
         # Controls - sử dụng settings manager nếu không có controls được truyền vào
         self.settings_manager = get_settings_manager()
         if controls:
@@ -377,6 +389,16 @@ class Character:
         self.damaged = True
         
         if self.hp <= 0:
+            # Check for revive effect from armor
+            if self.revive_available and hasattr(self, 'equipped_armor_has_revive'):
+                if self.equipped_armor_has_revive:
+                    # Revive with 50% HP
+                    self.hp = int(self.max_hp * 0.5)
+                    self.dead = False
+                    self.revive_available = False  # Use revive once
+                    print(f"[Equipment] {self.folder} revived with {self.hp} HP!")
+                    return
+            
             self.dead = True
             self.start_action("nga")
             # Té ngược

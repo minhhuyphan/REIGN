@@ -1,15 +1,32 @@
 {
   "vinh": {
-    "gold": 4641,
+    "gold": 3544,
     "purchased_characters": [
       "chien_binh",
-      "chien_than_lac_hong"
+      "chien_than_lac_hong",
+      "ninja",
+      "vo_si",
+      "tho_san_quai_vat"
     ]
   },
   "phuc": {
     "gold": 157,
     "purchased_characters": [
       "chien_binh"
+    ]
+  },
+  "huy": {
+    "gold": 3653,
+    "purchased_characters": [
+      "chien_binh",
+      "chien_than_lac_hong",
+      "ninja",
+      "vo_si",
+      "tho_san_quai_vat"
+    ],
+    "owned_equipment": [
+      "kiem_rong",
+      "giay_thien_than"
     ]
   }
 }
