@@ -7,6 +7,10 @@ class ShopScene:
     def __init__(self, game):
         self.game = game
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 28)
+        
+        # Gacha button
+        self.gacha_button = None
+        
         # Catalog mirrors character select (id, name, folder, price)
         self.catalog = [
             { 'id': 'chien_binh', 'name': 'Chiến binh', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/chien_binh', 'price': 0 },
@@ -57,8 +61,18 @@ class ShopScene:
                     self.buy_by_index(self.selected_idx)
                     self.input_cooldown = 8
                     return
+                elif event.key == pygame.K_g:
+                    # Go to gacha scene
+                    self.game.change_scene('gacha_trang_bi')
+                    return
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
+            
+            # Check gacha button
+            if self.gacha_button and self.gacha_button.collidepoint(mx, my):
+                self.game.change_scene('gacha_trang_bi')
+                return
+            
             # check buy buttons
             for idx, rect in enumerate(self.buttons):
                 if rect.collidepoint(mx, my):
@@ -123,6 +137,15 @@ class ShopScene:
             gold = profile.get('gold', 0)
         gold_text = self.font.render(f'Vàng: {gold}', True, (255, 255, 0))
         screen.blit(gold_text, (screen.get_width() - gold_text.get_width() - 40, 20))
+        
+        # Draw GACHA button (top right, below gold)
+        self.gacha_button = pygame.Rect(screen.get_width() - 220, 60, 200, 50)
+        pygame.draw.rect(screen, (100, 50, 150), self.gacha_button, border_radius=10)
+        pygame.draw.rect(screen, (200, 100, 255), self.gacha_button, 3, border_radius=10)
+        
+        gacha_text = self.font.render('🎰 Quay Trang Bị', True, (255, 255, 255))
+        screen.blit(gacha_text, (self.gacha_button.centerx - gacha_text.get_width()//2, 
+                                 self.gacha_button.centery - gacha_text.get_height()//2))
 
         # Draw character grid similar to selection screen
         num = len(self.catalog)

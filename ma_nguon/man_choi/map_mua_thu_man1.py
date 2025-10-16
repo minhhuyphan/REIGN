@@ -42,7 +42,9 @@ class MapMuaThuMan1Scene:
             self.player.x = 100
             self.player.y = 300
             self.player.base_y = 300
-            self.player.hp = self.player.max_hp  # Hồi đầy máu
+            # Hồi đầy máu (bao gồm cả equipment bonus)
+            max_hp_with_equipment = self.player.get_max_hp_with_equipment() if hasattr(self.player, 'get_max_hp_with_equipment') else self.player.max_hp
+            self.player.hp = max_hp_with_equipment
         else:
             # Code tạo player mới
             folder_nv = os.path.join("Tai_nguyen", "hinh_anh", "nhan_vat")
@@ -243,7 +245,7 @@ class MapMuaThuMan1Scene:
                             max_frames = len(self.player.animations[self.player.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.damage, self.player.flip)
+                                enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
                                 enemy.damaged = True
                     elif self.player.state == "da" and self.player.actioning and not enemy.damaged:
                         # Kiểm tra frame cuối cho đòn đá
@@ -251,7 +253,7 @@ class MapMuaThuMan1Scene:
                             max_frames = len(self.player.animations[self.player.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.kick_damage, self.player.flip)
+                                enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
                                 enemy.damaged = True
 
                     # Quái chỉ gây damage ở frame cuối của đòn tấn công

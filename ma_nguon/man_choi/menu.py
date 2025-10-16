@@ -8,7 +8,11 @@ class MenuScene:
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
 
-        self.options = ["Màn 1", "Màn 2", "Map mùa thu", "Map Công Nghệ","Map NINJA", "Map Rừng Linh Vực", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
+        # Dynamic menu based on login status
+        if hasattr(game, 'current_user') and game.current_user:
+            self.options = ["Chọn Map", "Trang bị", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Đăng xuất", "Thoát"]
+        else:
+            self.options = ["Chọn Map", "Trang bị", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
 
         # Animation variables
         self.bounce_offset = 0
@@ -36,43 +40,35 @@ class MenuScene:
             elif event.key == pygame.K_RETURN:
                 # ✅ Xử lý từng lựa chọn menu
                 if self.selected == 0:
-                    self.game.target_level = "level1"
-                    self.game.change_scene("character_select")
+                    # Chọn Map
+                    self.game.change_scene("chon_map")
                 elif self.selected == 1:
-                    self.game.target_level = "level2"
-                    self.game.change_scene("character_select")
+                    # Trang bị
+                    self.game.change_scene("equipment")
                 elif self.selected == 2:
-                    self.game.change_scene("autumn_levels")
-                elif self.selected == 3:
-                    # Map Công Nghệ
-                    # Use the registered scene key 'map_cong_nghe' (matches file map_cong_nghe.py)
-                    self.game.change_scene('map_cong_nghe')
-                elif self.selected == 4:
-                    self.game.change_scene('autumn_levels_ninja')
-                elif self.selected == 5:
-                    self.game.target_level = "map_rung_linh_vuc"
-                    self.game.change_scene("character_select")
-                elif self.selected == 6:
                     # Cửa hàng
                     self.game.change_scene("shop")
-                elif self.selected == 7:
+                elif self.selected == 3:
+                    # Hướng dẫn
                     self.game.change_scene("help")
-                elif self.selected == 8:
+                elif self.selected == 4:
+                    # Cài đặt
                     self.game.change_scene("settings")
-                elif self.selected == 9:
-                    # If a user is logged in, log them out; otherwise open login
+                elif self.selected == 5:
+                    # Check if user is logged in
                     if hasattr(self.game, 'current_user') and self.game.current_user:
-                        # clear session and current user
-                        try:
-                            from ma_nguon.tien_ich import user_store
-                            user_store.clear_session()
-                        except Exception:
-                            pass
+                        # This is "Đăng xuất" option - logout
+                        from ma_nguon.tien_ich import user_store
+                        user_store.clear_session()
                         self.game.current_user = None
-                        # update options text back to Thoát
-                        self.game.change_scene('menu')
-                    else:
+                        self.game.profile = None
                         self.game.change_scene('login')
+                    else:
+                        # This is "Thoát" option - exit game
+                        self.game.running = False
+                elif self.selected == 6:
+                    # "Thoát" when logged in
+                    self.game.running = False
 
 
     def update(self):
@@ -135,10 +131,8 @@ class MenuScene:
             screen.blit(gold_surf, (screen.get_width() - gold_surf.get_width() - 20, 44))
         
         # Menu options with medieval-themed colors and bounce effect
-        # Compute options copy so we can modify the last label dynamically
-        options = list(self.options)
-        if hasattr(self.game, 'current_user') and self.game.current_user:
-            options[-1] = 'Đăng xuất'
+        # Use self.options directly without modification
+        options = self.options
 
         for i, text in enumerate(options):
             # Calculate base position
