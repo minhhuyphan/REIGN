@@ -490,7 +490,7 @@ class MapCongNgheScene:
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if getattr(self.player, "frame", 0) >= damage_frame_threshold:
                                 try:
-                                    enemy.take_damage(self.player.damage, self.player.flip)
+                                    enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
                                     enemy.damaged = True
                                 except Exception:
                                     traceback.print_exc()
@@ -500,7 +500,7 @@ class MapCongNgheScene:
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if getattr(self.player, "frame", 0) >= damage_frame_threshold:
                                 try:
-                                    enemy.take_damage(self.player.kick_damage, self.player.flip)
+                                    enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
                                     enemy.damaged = True
                                 except Exception:
                                     traceback.print_exc()
@@ -529,7 +529,7 @@ class MapCongNgheScene:
                                 damage_frame_threshold = max(1, int(max_frames * 0.8))
                                 if getattr(self.player, "frame", 0) >= damage_frame_threshold:
                                     try:
-                                        self.current_boss.take_damage(self.player.damage, self.player.flip)
+                                        self.current_boss.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
                                         self.current_boss.damaged = True
                                     except Exception:
                                         traceback.print_exc()
@@ -539,7 +539,7 @@ class MapCongNgheScene:
                                 damage_frame_threshold = max(1, int(max_frames * 0.8))
                                 if getattr(self.player, "frame", 0) >= damage_frame_threshold:
                                     try:
-                                        self.current_boss.take_damage(self.player.kick_damage, self.player.flip)
+                                        self.current_boss.take_damage(self.player.kick_damage, self.player.flip, self.player)
                                         self.current_boss.damaged = True
                                     except Exception:
                                         traceback.print_exc()

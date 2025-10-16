@@ -26,6 +26,14 @@ class Character:
             self.kick_damage = 20
             self.defense = 2
             self.regen_hp = 0  # HP hồi mỗi giây
+        
+        # Lưu base stats để có thể reset khi thay đổi equipment
+        self.base_hp = self.hp
+        self.base_max_hp = self.max_hp
+        self.base_speed = self.speed
+        self.base_damage = self.damage
+        self.base_defense = self.defense
+        
         # Mana for skills
         self.max_mana = stats.get('max_mana', 200) if stats else 200
         self.mana = self.max_mana
@@ -33,6 +41,16 @@ class Character:
         # Currency and potions
         self.gold = 0
         self.potions = {}
+        
+        # Equipment slots (3 slots: attack, defense, speed)
+        self.equipped = {
+            'attack': None,
+            'defense': None,
+            'speed': None
+        }
+        self.has_used_revive = False  # Track if revive effect has been used
+        self.burn_effect_timer = 0  # Timer for burn effect
+        self.burn_effect_active = False
         
         # Controls - sử dụng settings manager nếu không có controls được truyền vào
         self.settings_manager = get_settings_manager()
@@ -208,9 +226,25 @@ class Character:
             if abs(self.knockback_speed) < 1:
                 self.knockback_speed = 0
         
+        # Xử lý burn effect
+        if self.burn_effect_active:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.burn_effect_timer >= 1000:  # Mỗi giây
+                burn_damage, _ = self.get_burn_effect()
+                if burn_damage > 0:
+                    self.hp -= burn_damage
+                    self.burn_effect_timer = current_time
+                    if self.hp <= 0 and not self.dead:
+                        if self.can_revive():
+                            self.trigger_revive()
+                        else:
+                            self.dead = True
+                            self.start_action("nga")
+        
         # Hồi máu nhỏ
         if self.hp > 0:
-            self.hp = min(self.hp + self.regen_hp, self.max_hp)
+            max_hp_with_eq = self.get_max_hp_with_equipment()
+            self.hp = min(self.hp + self.regen_hp, max_hp_with_eq)
         # Hồi mana theo thời gian (sử dụng ticks -> mỗi giây dựa trên clock tick)
         # We'll use pygame time to increment mana smoothly
         try:
@@ -231,6 +265,9 @@ class Character:
 
         moving = False
         self.defending = False
+        
+        # Get effective speed with equipment bonus
+        effective_speed = self.get_effective_speed()
 
         # --- Xử lý action ---
         if self.actioning:
@@ -265,12 +302,12 @@ class Character:
             elif self.controls.get("right") and keys[self.controls["right"]]:
                 self.state = "chay"
                 self.flip = False
-                self.x += self.speed
+                self.x += effective_speed
                 moving = True
             elif self.controls.get("left") and keys[self.controls["left"]]:
                 self.state = "chay"
                 self.flip = True
-                self.x -= self.speed
+                self.x -= effective_speed
                 moving = True
             else:
                 self.state = "dung_yen"
@@ -283,10 +320,10 @@ class Character:
                 self.state = "chay"
                 if self.x < target.x:
                     self.flip = False
-                    self.x += self.speed
+                    self.x += effective_speed
                 else:
                     self.flip = True
-                    self.x -= self.speed
+                    self.x -= effective_speed
                 moving = True
             # Quái tấn công khi đủ gần
             elif distance < 120:
@@ -311,8 +348,11 @@ class Character:
 
         # --- Nếu chết ---
         if self.hp <= 0 and not self.dead:
-            self.dead = True
-            self.start_action("nga")
+            if self.can_revive():
+                self.trigger_revive()
+            else:
+                self.dead = True
+                self.start_action("nga")
 
     def draw(self, surface, camera_x=0):
         # Tính toán vị trí vẽ sau khi trừ camera offset
@@ -366,8 +406,9 @@ class Character:
         if self.hp <= 0 or self.dead:
             return
             
-        # Giảm damage bởi defense
-        net_damage = max(damage - self.defense, 0)
+        # Giảm damage bởi defense (bao gồm equipment bonus)
+        total_defense = self.defense + self.get_defense_bonus()
+        net_damage = max(damage - total_defense, 0)
         self.hp -= net_damage
         
         if self.sound_hit:
@@ -377,10 +418,147 @@ class Character:
         self.damaged = True
         
         if self.hp <= 0:
-            self.dead = True
-            self.start_action("nga")
-            # Té ngược
-            self.knockback_speed = -15 if not attacker_flip else 15
+            # Check revive effect from equipment
+            if self.can_revive():
+                self.trigger_revive()
+            else:
+                self.dead = True
+                self.start_action("nga")
+                # Té ngược
+                self.knockback_speed = -15 if not attacker_flip else 15
         else:
             # Bị đẩy lùi khi trúng đòn
             self.knockback_speed = -5 if not attacker_flip else 5
+
+    # --- Equipment methods ---
+    def equip_item(self, equipment):
+        """Trang bị một item vào slot phù hợp"""
+        if equipment and equipment.equipment_type in self.equipped:
+            # Unequip current item in that slot
+            old_equipment = self.equipped[equipment.equipment_type]
+            if old_equipment:
+                old_equipment.equipped_to = None
+            
+            # Equip new item
+            self.equipped[equipment.equipment_type] = equipment
+            equipment.equipped_to = getattr(self, 'character_name', 'unknown')
+            
+            # Apply stat bonuses
+            self.apply_equipment_bonuses()
+            return True
+        return False
+    
+    def unequip_item(self, equipment_type):
+        """Gỡ trang bị khỏi slot"""
+        if equipment_type in self.equipped and self.equipped[equipment_type]:
+            equipment = self.equipped[equipment_type]
+            equipment.equipped_to = None
+            self.equipped[equipment_type] = None
+            
+            # Recalculate stats
+            self.apply_equipment_bonuses()
+            return True
+        return False
+    
+    def apply_equipment_bonuses(self):
+        """Áp dụng bonus từ trang bị TRỰC TIẾP vào stats"""
+        # Reset về base stats trước
+        old_max_hp = self.max_hp
+        self.max_hp = self.base_max_hp
+        self.damage = self.base_damage
+        self.defense = self.base_defense
+        self.speed = self.base_speed
+        
+        # Cộng tất cả bonus từ equipment
+        for equipment in self.equipped.values():
+            if equipment:
+                self.max_hp += equipment.hp_bonus
+                self.damage += equipment.attack_bonus
+                self.defense += equipment.defense_bonus
+                self.speed += equipment.speed_bonus
+        
+        # Điều chỉnh HP hiện tại theo tỷ lệ
+        if old_max_hp > 0:
+            hp_ratio = self.hp / old_max_hp
+            self.hp = int(self.max_hp * hp_ratio)
+        else:
+            self.hp = self.max_hp
+    
+    def get_attack_bonus(self):
+        """Lấy bonus công từ trang bị"""
+        bonus = 0
+        for equipment in self.equipped.values():
+            if equipment:
+                bonus += equipment.attack_bonus
+        return bonus
+    
+    def get_defense_bonus(self):
+        """Lấy bonus thủ từ trang bị"""
+        bonus = 0
+        for equipment in self.equipped.values():
+            if equipment:
+                bonus += equipment.defense_bonus
+        return bonus
+    
+    def get_hp_bonus(self):
+        """Lấy bonus HP từ trang bị"""
+        bonus = 0
+        for equipment in self.equipped.values():
+            if equipment:
+                bonus += equipment.hp_bonus
+        return bonus
+    
+    def get_speed_bonus(self):
+        """Lấy bonus tốc độ từ trang bị"""
+        bonus = 0
+        for equipment in self.equipped.values():
+            if equipment:
+                bonus += equipment.speed_bonus
+        return bonus
+    
+    def get_effective_damage(self):
+        """Lấy sát thương thực tế (đã bao gồm equipment)"""
+        return self.damage  # Damage đã được cộng equipment trong apply_equipment_bonuses()
+    
+    def get_effective_speed(self):
+        """Lấy tốc độ thực tế (đã bao gồm equipment)"""
+        return self.speed  # Speed đã được cộng equipment trong apply_equipment_bonuses()
+    
+    def get_max_hp_with_equipment(self):
+        """Lấy max HP (đã bao gồm equipment)"""
+        return self.max_hp  # Max HP đã được cộng equipment trong apply_equipment_bonuses()
+    
+    def can_revive(self):
+        """Kiểm tra xem có thể hồi sinh không"""
+        if self.has_used_revive:
+            return False
+        
+        for equipment in self.equipped.values():
+            if equipment and equipment.has_revive_effect:
+                return True
+        return False
+    
+    def trigger_revive(self):
+        """Kích hoạt hiệu ứng hồi sinh"""
+        for equipment in self.equipped.values():
+            if equipment and equipment.has_revive_effect:
+                max_hp = self.get_max_hp_with_equipment()
+                self.hp = int(max_hp * equipment.revive_hp_percent / 100)
+                self.has_used_revive = True
+                self.dead = False
+                print(f"Hồi sinh với {self.hp} HP!")
+                return
+    
+    def has_slow_effect(self):
+        """Kiểm tra xem có hiệu ứng làm chậm không"""
+        for equipment in self.equipped.values():
+            if equipment and equipment.has_slow_effect:
+                return True
+        return False
+    
+    def get_burn_effect(self):
+        """Lấy thông tin hiệu ứng thiêu đốt"""
+        for equipment in self.equipped.values():
+            if equipment and equipment.has_burn_effect:
+                return (equipment.burn_damage, equipment.burn_duration)
+        return (0, 0)

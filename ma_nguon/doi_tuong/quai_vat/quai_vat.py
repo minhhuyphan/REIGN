@@ -65,6 +65,13 @@ class QuaiVat:
         self.attack_cooldown = 800  # ms giữa 2 lần tấn công
         self.last_attack_time = 0
         
+        # Status effects
+        self.is_slowed = False
+        self.slow_end_time = 0
+        self.burn_damage_per_second = 0
+        self.burn_end_time = 0
+        self.last_burn_tick = 0
+        
         # Vùng hoạt động của quái vật
         self.home_x = x  # Vị trí ban đầu
         self.patrol_range = 200  # Phạm vi đi tuần tra
@@ -94,6 +101,34 @@ class QuaiVat:
 
     def update(self, target=None):
         now = pygame.time.get_ticks()
+        
+        # Apply burn effect
+        if self.burn_end_time > 0 and now < self.burn_end_time:
+            if now - self.last_burn_tick >= 1000:  # Every second
+                self.hp -= self.burn_damage_per_second
+                self.last_burn_tick = now
+                if self.hp <= 0 and not self.dead:
+                    self.dead = True
+                    self.state = "nga"
+                    self.frame = 0
+                    self.image = self.animations["nga"][0]
+                    if self.sounds.get("chet"):
+                        self.sounds["chet"].play()
+                    self.knockback_speed = 5
+                    try:
+                        self.spawned_drops = self.spawn_drops()
+                    except Exception:
+                        self.spawned_drops = []
+        elif now >= self.burn_end_time:
+            self.burn_end_time = 0
+            self.burn_damage_per_second = 0
+        
+        # Check slow status
+        if self.is_slowed and now >= self.slow_end_time:
+            self.is_slowed = False
+        
+        # Get effective speed (reduced if slowed)
+        effective_speed = self.speed * 0.5 if self.is_slowed else self.speed
         
         # Reset damaged flag chỉ khi player THỰC SỰ dừng tấn công
         if target and hasattr(target, 'actioning') and hasattr(target, 'action_type'):
@@ -145,10 +180,10 @@ class QuaiVat:
                 self.state = "chay"
                 if self.x < self.home_x:
                     self.flip = False
-                    self.x += self.speed
+                    self.x += effective_speed
                 elif self.x > self.home_x:
                     self.flip = True
-                    self.x -= self.speed
+                    self.x -= effective_speed
                 
                 # Nếu đã về gần vị trí home, dừng lại
                 if abs(self.x - self.home_x) < 10:
@@ -175,9 +210,9 @@ class QuaiVat:
                 self.flip = self.x > target.x
                 
                 if self.x < target.x:
-                    self.x += self.speed
+                    self.x += effective_speed
                 else:
-                    self.x -= self.speed
+                    self.x -= effective_speed
             
             # Đi tuần tra trong vùng hoạt động khi không có target
             elif not self.returning_home and random.random() < 0.01:  # Xác suất nhỏ để thay đổi hướng
@@ -198,12 +233,25 @@ class QuaiVat:
             self.frame = (self.frame + 1) % len(self.animations[self.state])
             self.image = self.animations[self.state][self.frame]
 
-    def take_damage(self, damage, attacker_flip):
+    def take_damage(self, damage, attacker_flip, attacker=None):
         if self.dead: 
             return
         self.hp -= damage
         if self.sounds["dinh_don"]:
             self.sounds["dinh_don"].play()
+        
+        # Apply special effects from attacker's equipment
+        if attacker:
+            # Check for slow effect
+            if hasattr(attacker, 'has_slow_effect') and attacker.has_slow_effect():
+                self.apply_slow(2.0)  # 2 seconds slow
+            
+            # Check for burn effect
+            if hasattr(attacker, 'get_burn_effect'):
+                burn_dmg, burn_dur = attacker.get_burn_effect()
+                if burn_dmg > 0:
+                    self.apply_burn(burn_dmg, burn_dur)
+        
         if self.hp <= 0:
             self.dead = True
             self.state = "nga"
@@ -218,6 +266,17 @@ class QuaiVat:
                 self.spawned_drops = self.spawn_drops()
             except Exception:
                 self.spawned_drops = []
+    
+    def apply_slow(self, duration):
+        """Apply slow effect for duration seconds"""
+        self.is_slowed = True
+        self.slow_end_time = pygame.time.get_ticks() + int(duration * 1000)
+    
+    def apply_burn(self, damage, duration):
+        """Apply burn effect"""
+        self.burn_damage_per_second = damage
+        self.burn_end_time = pygame.time.get_ticks() + int(duration * 1000)
+        self.last_burn_tick = pygame.time.get_ticks()
 
     def spawn_drops(self):
         """Return a list of item instances dropped at the enemy position."""
@@ -265,3 +324,26 @@ class QuaiVat:
         if not self.dead:
             pygame.draw.rect(screen, (100,100,100), (draw_x, self.y-15, 60, 8))
             pygame.draw.rect(screen, self.color, (draw_x, self.y-15, int(60*self.hp/100), 8))
+            
+            # Visual indicators for status effects
+            indicator_x = draw_x + 65
+            indicator_y = self.y - 15
+            
+            # Burn effect indicator (fire icon)
+            if self.burn_end_time > 0 and pygame.time.get_ticks() < self.burn_end_time:
+                # Draw small fire icon (orange/red circle with flame)
+                pygame.draw.circle(screen, (255, 100, 0), (indicator_x, indicator_y + 4), 6)
+                pygame.draw.circle(screen, (255, 200, 0), (indicator_x, indicator_y + 2), 4)
+                indicator_x += 15
+            
+            # Slow effect indicator (ice/snowflake icon)
+            if self.is_slowed and pygame.time.get_ticks() < self.slow_end_time:
+                # Draw ice crystal (light blue diamond)
+                points = [
+                    (indicator_x, indicator_y),
+                    (indicator_x + 4, indicator_y + 4),
+                    (indicator_x, indicator_y + 8),
+                    (indicator_x - 4, indicator_y + 4)
+                ]
+                pygame.draw.polygon(screen, (100, 200, 255), points)
+                pygame.draw.polygon(screen, (200, 240, 255), points, 1)

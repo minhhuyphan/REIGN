@@ -2,6 +2,7 @@ import pygame
 import os
 from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.core import profile_manager
+from ma_nguon.doi_tuong.character_stats import CHARACTER_STATS
 
 class CharacterSelectScene:
     def __init__(self, game):
@@ -12,74 +13,26 @@ class CharacterSelectScene:
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.font_small = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 30)
 
-        # Each character has an id and price (price=0 means free)
-        self.characters = [
-            {
-                "id": "chien_binh",
-                "name": "Chiến binh",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/chien_binh",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/chien_binh/dung_yen/0.png"),
-                "stats": {"hp": 500, "speed": 5, "damage": 30, "defense": 2},
-                "color": (0, 255, 0),
-                "price": 0
-            },
-            {
-                "id": "ninja",
-                "name": "Ninja",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/ninja",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/ninja/dung_yen/0.png"),
-                "stats": {"hp": 350, "speed": 8, "damage": 25, "defense": 1},
-                "color": (0, 0, 255),
-                "price": 300
-            },
-            {
-                "id": "vo_si",
-                "name": "Võ sĩ",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/vo_si",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/vo_si/dung_yen/0.png"),
-                "stats": {"hp": 1000, "speed": 4, "damage": 100, "defense": 3},
-                "color": (255, 0, 0),
-                "price": 400
-            },
-            {
-                "id": "chien_than_lac_hong",
-                "name": "Chiến Thần Lạc Hồng",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong/dung_yen/0.png"),
-                # Updated stats as requested
-                "stats": {"hp": 2000, "speed": 4, "damage": 200, "defense": 8},
-                "color": (255, 200, 0),
-                "price": 500
-            },
-            {
-                "id": "tho_san_quai_vat",
-                "name": "Thợ Săn Quái Vật",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/tho_san_quai_vat",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/tho_san_quai_vat/dung_yen/0.png"),
-                "stats": {"hp": 450, "speed": 7, "damage": 35, "defense": 2},
-                "color": (128, 0, 128),
-                "price": 250
-            },
-            {
-                "id": "mi_anh",
-                "name": "Mị Ảnh",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/Mi_Anh",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/Mi_Anh/dung_yen/0.png"),
-                "stats": {"hp": 450, "speed": 9, "damage": 28, "defense": 1},
-                "color": (100, 100, 255),
-                "price": 350
-            },
-            {
-                "id": "van_dao",
-                "name": "Vân Dao",
-                "folder": "tai_nguyen/hinh_anh/nhan_vat/Van_Dao",
-                "preview": self._load_preview("tai_nguyen/hinh_anh/nhan_vat/Van_Dao/dung_yen/0.png"),
-                "stats": {"hp": 600, "speed": 8, "damage": 32, "defense": 2},
-                "color": (255, 100, 200),
-                "price": 370
-            },
-          
-        ]
+        # Build character list from shared stats
+        self.characters = []
+        for char_id, stats in CHARACTER_STATS.items():
+            char_data = {
+                "id": char_id,
+                "name": stats["name"],
+                "folder": f"tai_nguyen/hinh_anh/nhan_vat/{char_id}",
+                "preview": self._load_preview(f"tai_nguyen/hinh_anh/nhan_vat/{char_id}/dung_yen/0.png"),
+                "stats": {
+                    "hp": stats["hp"],
+                    "speed": stats["speed"],
+                    "damage": stats["damage"],
+                    "defense": stats["defense"],
+                    "kick_damage": stats.get("kick_damage", 20)
+                },
+                "color": stats["color"],
+                "price": stats["price"]
+            }
+            self.characters.append(char_data)
+        
         self.selected_idx = 0
         self.confirm = False
         self.preview_scale = 0.5  # Tỉ lệ phóng to ảnh preview
@@ -151,22 +104,69 @@ class CharacterSelectScene:
         selected = self.characters[self.selected_idx]
         # Không truyền controls để Character tự lấy từ settings
         
-        # Tạo nhân vật với thuộc tính phù hợp
-        player = Character(100, 300, selected["folder"], color=selected["color"])
+        # Tạo nhân vật với thuộc tính phù hợp - truyền stats vào constructor
+        stats = {
+            'hp': selected["stats"]["hp"],
+            'damage': selected["stats"]["damage"],
+            'speed': selected["stats"]["speed"],
+            'defense': selected["stats"]["defense"],
+            'kick_damage': selected["stats"].get("kick_damage", 20),
+            'max_mana': selected["stats"].get("max_mana", 200),
+            'mana_regen': selected["stats"].get("mana_regen", 5)
+        }
+        player = Character(100, 300, selected["folder"], color=selected["color"], stats=stats)
         
-        # Cập nhật các thuộc tính từ stats
-        player.hp = selected["stats"]["hp"]
-        player.max_hp = selected["stats"]["hp"]
-        player.speed = selected["stats"]["speed"]
-        player.damage = selected["stats"]["damage"]
-        player.defense = selected["stats"]["defense"]
+        print(f"\n{'='*60}")
+        print(f"Tạo nhân vật: {selected['name']}")
+        print(f"Base stats - HP: {player.hp}/{player.max_hp}, Damage: {player.damage}, Speed: {player.speed}")
         
-        # Lưu nhân vật đã chọn vào game
+        # Lưu character_id để track equipment
+        player.character_id = selected["id"]
+        
+        # Load và áp dụng equipment từ profile
+        if hasattr(self.game, 'current_user') and self.game.current_user:
+            try:
+                from ma_nguon.core import profile_manager
+                from ma_nguon.doi_tuong.equipment import get_equipment_manager
+                
+                profile = profile_manager.load_profile(self.game.current_user)
+                character_equipment = profile.get('character_equipment', {})
+                char_id = selected["id"]
+                
+                if char_id in character_equipment:
+                    eq_manager = get_equipment_manager()
+                    # Load equipment data vào manager
+                    eq_manager.load_character_equipment(char_id, character_equipment[char_id])
+                    
+                    print(f"Equipment cho {char_id}: {character_equipment[char_id]}")
+                    
+                    # Apply equipment to player
+                    for slot_type, eq_name in character_equipment[char_id].items():
+                        equipment = eq_manager.get_equipment_by_name(eq_name)
+                        if equipment:
+                            success = player.equip_item(equipment)
+                            print(f"  Lắp {eq_name} vào {slot_type}: {success}")
+                    
+                    print(f"Sau khi lắp trang bị - HP: {player.hp}/{player.max_hp}, Damage: {player.damage}, Speed: {player.speed}")
+                    print(f"{'='*60}\n")
+                    print(f"✓ Đã áp dụng trang bị cho {selected['name']}")
+                else:
+                    print(f"Không có trang bị cho {char_id}")
+                    print(f"{'='*60}\n")
+            except Exception as e:
+                print(f"✗ Lỗi khi load trang bị cho nhân vật: {e}")
+        
         # Lưu nhân vật đã chọn vào game
         self.game.selected_player = player
         
-        # Chuyển sang màn chơi đã chọn từ menu
-        self.game.change_scene(self.game.target_level)
+        # Kiểm tra xem có phải multi-stage map không
+        if hasattr(self.game, 'multi_stage_map') and self.game.multi_stage_map:
+            # Chuyển sang màn chọn màn con (ví dụ: chọn màn mùa thu)
+            stage_selector = getattr(self.game, 'stage_selector_scene', self.game.target_level)
+            self.game.change_scene(stage_selector)
+        else:
+            # Chuyển thẳng vào màn chơi
+            self.game.change_scene(self.game.target_level)
 
     def _ensure_selected_visible(self):
         # recompute layout to determine where selected sits
@@ -296,19 +296,80 @@ class CharacterSelectScene:
             stats = char["stats"]
             font_stats = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 18)  # Font nhỏ hơn
             
+            # Get equipment bonuses for this character
+            equipment_bonuses = {'hp': 0, 'damage': 0, 'defense': 0, 'speed': 0}
+            if user and cid and owned:
+                try:
+                    from ma_nguon.doi_tuong.equipment import get_equipment_manager
+                    profile = profile_manager.load_profile(user)
+                    char_equipment = profile.get('character_equipment', {}).get(cid, {})
+                    
+                    if char_equipment:
+                        eq_manager = get_equipment_manager()
+                        for slot_type, eq_name in char_equipment.items():
+                            eq = eq_manager.get_equipment_by_name(eq_name)
+                            if eq:
+                                equipment_bonuses['hp'] += eq.hp_bonus
+                                equipment_bonuses['damage'] += eq.attack_bonus
+                                equipment_bonuses['defense'] += eq.defense_bonus
+                                equipment_bonuses['speed'] += eq.speed_bonus
+                except Exception:
+                    pass
+            
             # Draw stats aligned inside the card
             stat_x = pos_x - card_w // 2 + 12
-            hp_text = font_stats.render(f"HP: {stats['hp']}", True, (255, 100, 100))
-            screen.blit(hp_text, (stat_x, stats_y))
+            
+            # HP với bonus (hiển thị tổng)
+            hp_base = stats['hp']
+            hp_bonus = equipment_bonuses['hp']
+            hp_total = hp_base + hp_bonus
+            if hp_bonus > 0:
+                hp_text = font_stats.render(f"HP: {hp_total}", True, (255, 100, 100))
+                hp_bonus_text = font_stats.render(f"(+{hp_bonus})", True, (100, 255, 100))
+                screen.blit(hp_text, (stat_x, stats_y))
+                screen.blit(hp_bonus_text, (stat_x + hp_text.get_width() + 5, stats_y))
+            else:
+                hp_text = font_stats.render(f"HP: {hp_base}", True, (255, 100, 100))
+                screen.blit(hp_text, (stat_x, stats_y))
 
-            speed_text = font_stats.render(f"Tốc độ: {stats['speed']}", True, (100, 255, 100))
-            screen.blit(speed_text, (stat_x, stats_y + 22))
+            # Speed với bonus
+            speed_base = stats['speed']
+            speed_bonus = equipment_bonuses['speed']
+            speed_total = speed_base + speed_bonus
+            if speed_bonus > 0:
+                speed_text = font_stats.render(f"Tốc: {speed_total}", True, (100, 255, 100))
+                speed_bonus_text = font_stats.render(f"(+{speed_bonus})", True, (100, 255, 100))
+                screen.blit(speed_text, (stat_x, stats_y + 22))
+                screen.blit(speed_bonus_text, (stat_x + speed_text.get_width() + 5, stats_y + 22))
+            else:
+                speed_text = font_stats.render(f"Tốc: {speed_base}", True, (100, 255, 100))
+                screen.blit(speed_text, (stat_x, stats_y + 22))
 
-            dmg_text = font_stats.render(f"ST: {stats['damage']}", True, (255, 255, 100))
-            screen.blit(dmg_text, (stat_x, stats_y + 44))
+            # Damage với bonus
+            dmg_base = stats['damage']
+            dmg_bonus = equipment_bonuses['damage']
+            dmg_total = dmg_base + dmg_bonus
+            if dmg_bonus > 0:
+                dmg_text = font_stats.render(f"ST: {dmg_total}", True, (255, 255, 100))
+                dmg_bonus_text = font_stats.render(f"(+{dmg_bonus})", True, (100, 255, 100))
+                screen.blit(dmg_text, (stat_x, stats_y + 44))
+                screen.blit(dmg_bonus_text, (stat_x + dmg_text.get_width() + 5, stats_y + 44))
+            else:
+                dmg_text = font_stats.render(f"ST: {dmg_base}", True, (255, 255, 100))
+                screen.blit(dmg_text, (stat_x, stats_y + 44))
 
-            def_text = font_stats.render(f"PT: {stats['defense']}", True, (100, 100, 255))
-            screen.blit(def_text, (stat_x, stats_y + 66))
+            # Defense với bonus
+            def_base = stats['defense']
+            def_bonus = equipment_bonuses['defense']
+            def_total = def_base + def_bonus
+            if def_bonus > 0:
+                def_text = font_stats.render(f"PT: {def_total}", True, (100, 100, 255))
+                def_bonus_text = font_stats.render(f"(+{def_bonus})", True, (100, 255, 100))
+                screen.blit(def_text, (stat_x, stats_y + 66))
+                screen.blit(def_bonus_text, (stat_x + def_text.get_width() + 5, stats_y + 66))
+            else:
+                def_text = font_stats.render(f"PT: {def_base}", True, (100, 100, 255))
+                screen.blit(def_text, (stat_x, stats_y + 66))
             
             # Thêm chỉ báo đặc biệt chỉ cho Chiến Thần Lạc Hồng
             if cid == 'chien_than_lac_hong':

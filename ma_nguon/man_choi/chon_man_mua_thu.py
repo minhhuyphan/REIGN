@@ -57,13 +57,15 @@ class AutumnLevelsScene:
                 self.selected = (self.selected + 1) % len(self.options)
             elif event.key == pygame.K_RETURN:
                 if self.selected < 3:  # Màn 1, 2, 3
-                    # Lưu thông tin màn được chọn
+                    # Lưu thông tin màn được chọn và chuyển thẳng vào game
+                    # (Nhân vật đã được chọn trước đó)
                     self.game.target_level = self.level_scenes[self.selected]
-                    self.game.change_scene("character_select")
+                    self.game.change_scene(self.level_scenes[self.selected])
                 else:  # Quay lại menu chính
                     self.game.change_scene("menu")
             elif event.key == pygame.K_ESCAPE:
-                self.game.change_scene("menu")
+                # Quay lại màn chọn map
+                self.game.change_scene("chon_map")
 
     def update(self):
         # Title scale animation

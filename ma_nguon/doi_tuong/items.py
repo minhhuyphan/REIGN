@@ -1,6 +1,97 @@
 import pygame
 import random
 
+# Equipment data for gacha system
+EQUIPMENT_DATA = {
+    "Kiếm Rồng": {
+        "name": "Kiếm Rồng",
+        "type": "attack",
+        "rarity": "legendary",
+        "attack_bonus": 10,
+        "effects": ["burn"]
+    },
+    "Cung Băng Lãm": {
+        "name": "Cung Băng Lãm",
+        "type": "attack",
+        "rarity": "epic",
+        "attack_bonus": 8,
+        "effects": ["slow"]
+    },
+    "Giáp Ánh Sáng": {
+        "name": "Giáp Ánh Sáng",
+        "type": "defense",
+        "rarity": "legendary",
+        "hp_bonus": 200,
+        "effects": ["revive"]
+    },
+    "Giày Thiên Thần": {
+        "name": "Giày Thiên Thần",
+        "type": "speed",
+        "rarity": "epic",
+        "speed_bonus": 2,
+        "effects": []
+    },
+    # Common items (thêm các trang bị thường)
+    "Kiếm Sắt": {
+        "name": "Kiếm Sắt",
+        "type": "attack",
+        "rarity": "common",
+        "attack_bonus": 3,
+        "effects": []
+    },
+    "Cung Gỗ": {
+        "name": "Cung Gỗ",
+        "type": "attack",
+        "rarity": "common",
+        "attack_bonus": 2,
+        "effects": []
+    },
+    "Giáp Da": {
+        "name": "Giáp Da",
+        "type": "defense",
+        "rarity": "common",
+        "hp_bonus": 50,
+        "effects": []
+    },
+    "Giày Vải": {
+        "name": "Giày Vải",
+        "type": "speed",
+        "rarity": "common",
+        "speed_bonus": 1,
+        "effects": []
+    },
+    # Rare items
+    "Kiếm Bạc": {
+        "name": "Kiếm Bạc",
+        "type": "attack",
+        "rarity": "rare",
+        "attack_bonus": 5,
+        "effects": []
+    },
+    "Cung Thép": {
+        "name": "Cung Thép",
+        "type": "attack",
+        "rarity": "rare",
+        "attack_bonus": 4,
+        "effects": []
+    },
+    "Giáp Thép": {
+        "name": "Giáp Thép",
+        "type": "defense",
+        "rarity": "rare",
+        "hp_bonus": 100,
+        "effects": []
+    },
+    "Giày Da": {
+        "name": "Giày Da",
+        "type": "speed",
+        "rarity": "rare",
+        "speed_bonus": 1.5,
+        "effects": []
+    }
+}
+
+
 class Item:
     def __init__(self, x, y):
         self.x = x

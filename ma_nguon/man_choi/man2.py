@@ -227,7 +227,7 @@ class Level2Scene:
                             max_frames = len(self.player.animations[self.player.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.damage, self.player.flip)
+                                enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
                                 enemy.damaged = True
                     elif self.player.state == "da" and self.player.actioning and not enemy.damaged:
                         # Kiểm tra frame cuối cho đòn đá
@@ -235,7 +235,7 @@ class Level2Scene:
                             max_frames = len(self.player.animations[self.player.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.kick_damage, self.player.flip)
+                                enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
                                 enemy.damaged = True
 
                     # Quái chỉ gây damage ở frame cuối của đòn tấn công
@@ -261,7 +261,7 @@ class Level2Scene:
                             max_frames = len(self.player.animations[self.player.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if self.player.frame >= damage_frame_threshold:
-                                self.current_boss.take_damage(self.player.damage, self.player.flip)
+                                self.current_boss.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
                                 self.current_boss.damaged = True
                     elif self.player.state == "da" and self.player.actioning and not self.current_boss.damaged:
                         # Kiểm tra frame cuối cho đòn đá
@@ -269,7 +269,7 @@ class Level2Scene:
                             max_frames = len(self.player.animations[self.player.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if self.player.frame >= damage_frame_threshold:
-                                self.current_boss.take_damage(self.player.kick_damage, self.player.flip)
+                                self.current_boss.take_damage(self.player.kick_damage, self.player.flip, self.player)
                                 self.current_boss.damaged = True
 
                     # Boss chỉ gây damage ở frame cuối của đòn tấn công

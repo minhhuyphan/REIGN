@@ -2,6 +2,7 @@ import pygame, sys
 from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.man_choi.menu import MenuScene
 from ma_nguon.man_choi.chon_nhan_vat import CharacterSelectScene
+from ma_nguon.man_choi.chon_map import ChonMapScene
 from ma_nguon.man_choi.login import LoginScene
 from ma_nguon.core import profile_manager
 from ma_nguon.tien_ich import user_store
@@ -34,15 +35,17 @@ class Game:
 
         # --- Scene quản lý ---
         self.running = True
-        # Start the game at the login screen
         # Load current user from session
         self.current_user = user_store.load_current_user()
         # Load profile for current user if any
         if self.current_user:
             self.profile = profile_manager.load_profile(self.current_user)
+            # Auto-login: skip login screen and go to menu
+            self.current_scene = MenuScene(self)
         else:
             self.profile = None
-        self.current_scene = LoginScene(self)
+            # Show login screen
+            self.current_scene = LoginScene(self)
 
     def save_current_profile(self):
         if not self.current_user or not self.profile:
@@ -53,6 +56,9 @@ class Game:
         from ma_nguon.man_choi.loading import LoadingScene
         if scene_name == "exit":
             self.running = False
+        elif scene_name == "chon_map":
+            # Chuyển đến màn chọn map
+            self.current_scene = ChonMapScene(self)
         elif scene_name == "game_over":
             # Chuyển trực tiếp đến Game Over mà không qua Loading
             if hasattr(self, 'game_over_scene'):
@@ -92,20 +98,21 @@ class Game:
         # Vẽ nền máu tối (biểu thị máu đã mất)
         pygame.draw.rect(screen, (150, 0, 0), (bar_x + 3, bar_y + 3, bar_width - 6, bar_height - 6))
         
-        # Vẽ máu hiện tại
-        health_width = int((player.hp / player.max_hp) * (bar_width - 6))
+        # Vẽ máu hiện tại (sử dụng max HP có equipment)
+        max_hp_with_eq = player.get_max_hp_with_equipment() if hasattr(player, 'get_max_hp_with_equipment') else player.max_hp
+        health_width = int((player.hp / max_hp_with_eq) * (bar_width - 6)) if max_hp_with_eq > 0 else 0
         pygame.draw.rect(screen, (0, 200, 0), (bar_x + 3, bar_y + 3, health_width, bar_height - 6))
         
         # Vẽ viền ngoài
         pygame.draw.rect(screen, (200, 200, 200), (bar_x, bar_y, bar_width, bar_height), 2)
         
-        # Vẽ số máu
+        # Vẽ số máu (hiển thị max HP có equipment)
         if hasattr(self, 'font_manager'):
             font = self.font_manager.get_font(size=20)
         else:
             font = pygame.font.Font("tai_nguyen/font/Fz-Futurik.ttf", 20)
             
-        health_text = f"{player.hp}/{player.max_hp} HP"
+        health_text = f"{player.hp}/{max_hp_with_eq} HP"
         text_surf = font.render(health_text, True, (255, 255, 255))
         text_x = bar_x + bar_width // 2 - text_surf.get_width() // 2
         text_y = bar_y + bar_height // 2 - text_surf.get_height() // 2

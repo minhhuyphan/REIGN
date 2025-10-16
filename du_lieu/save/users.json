@@ -10,5 +10,9 @@
   "ngoc": {
     "salt": "664ea1073a1ddb04ea065b08cdee5c19",
     "pw_hash": "a2c65310b197ea1af330455528135a27426b91e38563c54fbade6e4a142b8656"
+  },
+  "test_auto_login": {
+    "salt": "de84b8fbb56ef41638fd06b0458538ff",
+    "pw_hash": "fae84c973c994da31bff6c57abc6194b6d017b5bb5e63c2a592fd07b761840c8"
   }
 }
