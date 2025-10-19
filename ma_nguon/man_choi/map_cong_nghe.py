@@ -9,6 +9,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich import bullet_handler
 
 
 class MapCongNgheScene:
@@ -151,7 +152,7 @@ class MapCongNgheScene:
                     # scale sprite nếu tồn tại
                     if hasattr(boss, "image") and boss.image:
                         try:
-                            scale_factor = 1.6
+                            scale_factor = 2.5
                             orig_img = boss.image
                             ow, oh = orig_img.get_size()
                             new_w, new_h = int(ow * scale_factor), int(oh * scale_factor)
@@ -417,6 +418,8 @@ class MapCongNgheScene:
                 self.player.update(keys)
             except Exception:
                 traceback.print_exc()
+
+            bullet_handler.update_bullets(self.player, self.normal_enemies, self.current_boss)
 
             if hasattr(self.player, "x"):
                 if self.player.x < 0:
@@ -708,3 +711,7 @@ class MapCongNgheScene:
             self.action_buttons.draw(screen, player=self.player)
         except Exception:
             pass
+
+        # Vẽ đạn (bullet)
+        if self.player:
+            bullet_handler.draw_bullets(self.player, screen, self.camera_x)

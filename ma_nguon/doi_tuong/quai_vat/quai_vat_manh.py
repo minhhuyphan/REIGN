@@ -4,14 +4,18 @@ import random
 import pygame
 import os
 class Boss1(QuaiVat):
-    def __init__(self, x, y, folder, sound_folder):
+    def __init__(self, x, y, folder, sound_folder, target_size=(400, 400)):
+        # QUAN TRỌNG: Không gọi super().__init__() trước vì nó sẽ load animations với target_size mặc định
+        # Thay vào đó, ta khởi tạo thuộc tính trước
+        self.target_size = target_size
+        
+        # Bây giờ mới gọi parent init
         super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=15)
+        
         self.hp = 150
         self.speed = 3
         self.damage = 10
         self.attack_cooldown = 600  # tấn công nhanh hơn
-        # Phóng to boss để nổi bật hơn
-        self.target_size = (320, 320)
         # Boss Map Công Nghệ: folder chứa các frame 0..6.png ở ngay trong thư mục
         # Ghi đè animations để dùng chuỗi ảnh đơn giản này cho tất cả action
         try:
@@ -61,8 +65,21 @@ class Boss1(QuaiVat):
             # Nếu lỗi, giữ nguyên animations đã được base class thiết lập
             pass
         
+    def take_damage(self, damage, attacker_flip, attacker=None):
+        if self.hp <= 0 or self.dead:
+            return
+        self.hp -= damage
+        self.damaged = True
+        if self.hp <= 0:
+            self.dead = True
+            self.state = "nga"
+            self.frame = 0
+        else:
+            self.knockback_speed = -5 if not attacker_flip else 5
+
 class Boss2(QuaiVat):
-    def __init__(self, x, y, folder, sound_folder):
+    def __init__(self, x, y, folder, sound_folder, target_size=(400, 400)):
+        self.target_size = target_size
         super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=15)
         self.hp = 250
         self.speed = 4
@@ -93,8 +110,21 @@ class Boss2(QuaiVat):
             return int(self.damage * self.special_damage_multiplier)
         return self.damage
 
+    def take_damage(self, damage, attacker_flip, attacker=None):
+        if self.hp <= 0 or self.dead:
+            return
+        self.hp -= damage
+        self.damaged = True
+        if self.hp <= 0:
+            self.dead = True
+            self.state = "nga"
+            self.frame = 0
+        else:
+            self.knockback_speed = -5 if not attacker_flip else 5
+
 class Boss3(QuaiVat):
-    def __init__(self, x, y, folder, sound_folder):
+    def __init__(self, x, y, folder, sound_folder, target_size=(400, 400)):
+        self.target_size = target_size
         super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=20)
         self.hp = 400
         self.speed = 5
@@ -126,3 +156,15 @@ class Boss3(QuaiVat):
         if self.state in ["da", "danh"] and hasattr(self, 'special_damage_multiplier'):
             return int(self.damage * self.special_damage_multiplier)
         return self.damage
+
+    def take_damage(self, damage, attacker_flip, attacker=None):
+        if self.hp <= 0 or self.dead:
+            return
+        self.hp -= damage
+        self.damaged = True
+        if self.hp <= 0:
+            self.dead = True
+            self.state = "nga"
+            self.frame = 0
+        else:
+            self.knockback_speed = -5 if not attacker_flip else 5

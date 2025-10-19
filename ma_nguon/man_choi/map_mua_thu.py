@@ -8,6 +8,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich import bullet_handler
 
 
 class MapMuaThuScene:
@@ -402,3 +403,6 @@ class MapMuaThuScene:
 
         # Draw UI buttons and HUD on top
         self.action_buttons.draw(screen, player=self.player)
+
+        # Vẽ đạn
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
