@@ -8,6 +8,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich.bullet_handler import update_bullets, draw_bullets
 
 
 class Level1Scene:
@@ -204,29 +205,42 @@ class Level1Scene:
             if not any_enemy_attacking:
                 self.player.damaged = False
 
+            # Cập nhật viên đạn của player
+            update_bullets(self.player, self.normal_enemies, self.current_boss)
+
             # Va chạm với quái thường
             for enemy in self.normal_enemies:
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
                 rect_enemy = enemy.image.get_rect(topleft=(enemy.x, enemy.y))
-                    
-                if rect_player.colliderect(rect_enemy):
-                    # Player chỉ gây damage ở frame cuối của đòn tấn công
-                    if self.player.state == "danh" and self.player.actioning and not enemy.damaged:
-                        # Kiểm tra xem có đang ở frame cuối của animation không
+
+                # If player is performing an attack, use attack_hitbox for hit detection
+                attacked = False
+                if self.player.state in ["danh", "da"] and self.player.actioning and not enemy.damaged:
+                    hitbox = self.player.attack_hitbox()
+                    # Translate hitbox to camera coordinates if needed (we're using world coordinates here)
+                    if hitbox.colliderect(rect_enemy):
+                        # Only apply on last frames of the attack animation
                         if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
                             max_frames = len(self.player.animations[self.player.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
+                                if self.player.state == "danh":
+                                    enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
+                                else:
+                                    enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
                                 enemy.damaged = True
-                    elif self.player.state == "da" and self.player.actioning and not enemy.damaged:
-                        # Kiểm tra frame cuối cho đòn đá
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
+                                attacked = True
+
+                # Fallback: if not attacked and rects overlap (touching), allow enemy to still damage player or vice versa
+                if not attacked and rect_player.colliderect(rect_enemy):
+                    # Quái chỉ gây damage ở frame cuối của đòn tấn công
+                    if enemy.state in ["danh", "da"] and not self.player.damaged:
+                        if hasattr(enemy, 'animations') and enemy.state in enemy.animations:
+                            max_frames = len(enemy.animations[enemy.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
-                                enemy.damaged = True
+                            if enemy.frame >= damage_frame_threshold:
+                                self.player.take_damage(enemy.damage, enemy.flip)
+                                self.player.damaged = True
 
                     # Quái chỉ gây damage ở frame cuối của đòn tấn công
                     if enemy.state in ["danh", "da"] and not self.player.damaged:
@@ -335,6 +349,9 @@ class Level1Scene:
 
         # Vẽ nhân vật (với camera offset)
         self.player.draw(screen, self.camera_x)
+        
+        # Vẽ viên đạn
+        draw_bullets(self.player, screen, self.camera_x)
         
         # Vẽ các lớp nền phía trước (che phủ nhân vật)
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)

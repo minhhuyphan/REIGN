@@ -8,6 +8,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich import bullet_handler
 
 
 class MapMuaThuMan3Scene:
@@ -241,37 +242,33 @@ class MapMuaThuMan3Scene:
             for enemy in self.normal_enemies:
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
                 rect_enemy = enemy.image.get_rect(topleft=(enemy.x, enemy.y))
-                    
-                if rect_player.colliderect(rect_enemy):
-                    # Player chỉ gây damage ở frame cuối của đòn tấn công
-                    if self.player.state == "danh" and self.player.actioning and not enemy.damaged:
-                        # Kiểm tra xem có đang ở frame cuối của animation không
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
-                                enemy.damaged = True
-                    elif self.player.state == "da" and self.player.actioning and not enemy.damaged:
-                        # Kiểm tra frame cuối cho đòn đá
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
-                                enemy.damaged = True
 
+                # If player is performing an attack, use attack_hitbox for hit detection
+                attacked = False
+                if self.player.state in ["danh", "da"] and self.player.actioning and not enemy.damaged:
+                    hitbox = self.player.attack_hitbox()
+                    if hitbox.colliderect(rect_enemy):
+                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                            max_frames = len(self.player.animations[self.player.state])
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if self.player.frame >= damage_frame_threshold:
+                                if self.player.state == "danh":
+                                    enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
+                                else:
+                                    enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
+                                enemy.damaged = True
+                                attacked = True
+
+                # Fallback: if not attacked and rects overlap (touching), allow enemy to still damage player
+                if not attacked and rect_player.colliderect(rect_enemy):
                     # Quái chỉ gây damage ở frame cuối của đòn tấn công
                     if enemy.state in ["danh", "da"] and not self.player.damaged:
-                        # Kiểm tra xem có đang ở frame cuối của animation không
                         if hasattr(enemy, 'animations') and enemy.state in enemy.animations:
                             max_frames = len(enemy.animations[enemy.state])
-                            # Gây damage ở frame cuối hoặc gần cuối (frame 80-100% của animation)
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if enemy.frame >= damage_frame_threshold:
                                 self.player.take_damage(enemy.damage, enemy.flip)
                                 self.player.damaged = True
-                        
             # Va chạm với boss
             if self.current_boss:
                 rect_boss = self.current_boss.image.get_rect(topleft=(self.current_boss.x, self.current_boss.y))
@@ -335,6 +332,8 @@ class MapMuaThuMan3Scene:
                 enemy.state = "dung_yen"
                 enemy.attacking = False
                 enemy.frame = 0
+
+        bullet_handler.update_bullets(self.player, self.normal_enemies, self.current_boss)
 
 
     def draw_leaf(self, screen, leaf, camera_x):
@@ -423,3 +422,5 @@ class MapMuaThuMan3Scene:
 
         # Draw UI buttons and HUD on top
         self.action_buttons.draw(screen, player=self.player)
+
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)

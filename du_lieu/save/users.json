@@ -15,8 +15,14 @@
     "salt": "de84b8fbb56ef41638fd06b0458538ff",
     "pw_hash": "fae84c973c994da31bff6c57abc6194b6d017b5bb5e63c2a592fd07b761840c8"
   },
+<<<<<<< HEAD
   "phuc123": {
     "salt": "5ffdd238df4c71377aa1ea4672a8dfb4",
     "pw_hash": "1c3eb6837278d1549a08c31d581631891bfe9b498ea829cd5e5a984897d0cf67"
+=======
+  "huy": {
+    "salt": "026bff5e067236447854bb2aed49fed0",
+    "pw_hash": "e1aee19d7d4f07e7d5212d5215b00b3de62f043813b34a2322407e3ca23ba339"
+>>>>>>> 21ffd4156c4811eab3b0b0be04a9b87942e2ddcb
   }
 }

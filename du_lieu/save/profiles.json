@@ -1,6 +1,6 @@
 {
   "vinh": {
-    "gold": 1737,
+    "gold": 1193,
     "purchased_characters": [
       "chien_binh",
       "ninja",
@@ -24,7 +24,8 @@
       "Giáp Da",
       "Cung Băng Lãm",
       "Cung Gỗ",
-      "Cung Thép"
+      "Cung Thép",
+      "Giày Da"
     ]
   },
   "tai": {
@@ -50,6 +51,7 @@
       }
     }
   },
+<<<<<<< HEAD
   "phuc123": {
     "gold": 1,
     "purchased_characters": [
@@ -65,5 +67,17 @@
         "attack": "Kiếm Rồng"
       }
     }
+=======
+  "huy": {
+    "gold": 624,
+    "purchased_characters": [
+      "chien_binh",
+      "tho_san_quai_vat"
+    ],
+    "character_equipment": {},
+    "equipment_inventory": [
+      "Giày Vải"
+    ]
+>>>>>>> 21ffd4156c4811eab3b0b0be04a9b87942e2ddcb
   }
 }

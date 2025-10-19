@@ -9,6 +9,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich import bullet_handler
 
 
 class MapCongNgheScene:
@@ -96,6 +97,8 @@ class MapCongNgheScene:
 
             # Khởi tạo quái vật
             folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat","quai_map_cong_nghe","quai_nho")
+            # Folder boss (chứa 7 tấm ảnh 0..6.png)
+            folder_boss = os.path.join("tai_nguyen", "hinh_anh", "quai_vat","quai_map_cong_nghe","boss")
             sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
             self.normal_enemies = []
@@ -137,7 +140,8 @@ class MapCongNgheScene:
             try:
                 self.bosses = []
                 try:
-                    boss = Boss1(self.game.map_width - 400, 400, folder_qv, sound_qv)
+                    # Tạo boss dùng đúng folder boss 7 frame
+                    boss = Boss1(self.game.map_width - 400, 400, folder_boss, sound_qv)
                     # đảm bảo thuộc tính cơ bản tồn tại
                     if hasattr(boss, "hp"):
                         boss.hp = int(boss.hp * 2.0)
@@ -148,7 +152,7 @@ class MapCongNgheScene:
                     # scale sprite nếu tồn tại
                     if hasattr(boss, "image") and boss.image:
                         try:
-                            scale_factor = 1.6
+                            scale_factor = 2.5
                             orig_img = boss.image
                             ow, oh = orig_img.get_size()
                             new_w, new_h = int(ow * scale_factor), int(oh * scale_factor)
@@ -415,6 +419,8 @@ class MapCongNgheScene:
             except Exception:
                 traceback.print_exc()
 
+            bullet_handler.update_bullets(self.player, self.normal_enemies, self.current_boss)
+
             if hasattr(self.player, "x"):
                 if self.player.x < 0:
                     self.player.x = 0
@@ -482,29 +488,31 @@ class MapCongNgheScene:
                 except Exception:
                     continue
 
-                if rect_player.colliderect(rect_enemy):
-                    # Player attack
-                    if self.player.state == "danh" and getattr(self.player, "actioning", False) and not getattr(enemy, "damaged", False):
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if getattr(self.player, "frame", 0) >= damage_frame_threshold:
-                                try:
-                                    enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
-                                    enemy.damaged = True
-                                except Exception:
-                                    traceback.print_exc()
-                    elif self.player.state == "da" and getattr(self.player, "actioning", False) and not getattr(enemy, "damaged", False):
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if getattr(self.player, "frame", 0) >= damage_frame_threshold:
-                                try:
-                                    enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
-                                    enemy.damaged = True
-                                except Exception:
-                                    traceback.print_exc()
+                # Use attack_hitbox when player is attacking for better close-range detection
+                attacked = False
+                if getattr(self.player, 'state', None) in ["danh", "da"] and getattr(self.player, 'actioning', False) and not getattr(enemy, 'damaged', False):
+                    try:
+                        hitbox = self.player.attack_hitbox()
+                        if hitbox.colliderect(rect_enemy):
+                            if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                                max_frames = len(self.player.animations[self.player.state])
+                                damage_frame_threshold = max(1, int(max_frames * 0.8))
+                                if getattr(self.player, "frame", 0) >= damage_frame_threshold:
+                                    try:
+                                        if self.player.state == "danh":
+                                            enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
+                                        else:
+                                            enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
+                                        enemy.damaged = True
+                                        attacked = True
+                                    except Exception:
+                                        traceback.print_exc()
+                    except Exception:
+                        # If attack_hitbox fails for any reason, fall back to rect collision
+                        pass
 
+                # Fallback: if not attacked and rects overlap (touching), allow enemy to still damage player
+                if not attacked and rect_player.colliderect(rect_enemy):
                     # Enemy attack
                     if getattr(enemy, "state", "") in ["danh", "da"] and not getattr(self.player, "damaged", False):
                         if hasattr(enemy, 'animations') and enemy.state in enemy.animations:
@@ -703,3 +711,7 @@ class MapCongNgheScene:
             self.action_buttons.draw(screen, player=self.player)
         except Exception:
             pass
+
+        # Vẽ đạn (bullet)
+        if self.player:
+            bullet_handler.draw_bullets(self.player, screen, self.camera_x)
