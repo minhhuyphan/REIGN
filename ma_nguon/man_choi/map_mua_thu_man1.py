@@ -8,6 +8,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.man_choi.skill_video import SkillVideoPlayer
 
 
 class MapMuaThuMan1Scene:
@@ -69,6 +70,9 @@ class MapMuaThuMan1Scene:
         self.normal_enemies = []
         # Items dropped on the ground
         self.items = []
+        # Skill video system
+        self.skill_video = None
+        self.showing_skill_video = False
         
         # Chỉ tạo 2 nhóm quái vật - ít nhất
         total_enemies = 0
@@ -80,13 +84,13 @@ class MapMuaThuMan1Scene:
             total_enemies += num_enemies
             for i in range(num_enemies):
                 x_pos = group_x + random.randint(-100, 100)
-                enemy = QuaiVat(x_pos, 300, folder_qv, sound_qv, color=(255, 200, 100), damage=8)  # Damage thấp
-                # Thiết lập vùng hoạt động nhỏ - ít tấn công
-                enemy.speed = 2
+                enemy = QuaiVat(x_pos, 300, folder_qv, sound_qv, color=(255, 200, 100), damage=15)  # Tăng từ 8 lên 15
+                # Thiết lập vùng hoạt động - tăng sức mạnh
+                enemy.hp = int(enemy.hp * 1.0)  # Giữ nguyên HP thay vì giảm
+                enemy.speed = 2.5  # Tăng từ 2 lên 2.5
                 enemy.home_x = x_pos
-                enemy.patrol_range = 150
-                enemy.aggro_range = 250
-                enemy.hp = int(enemy.hp * 0.8)  # 20% ít máu hơn
+                enemy.patrol_range = 200  # Tăng từ 150 lên 200
+                enemy.aggro_range = 350  # Tăng từ 250 lên 350
                 self.normal_enemies.append(enemy)
 
         # Chỉ có 1 boss dễ
@@ -94,11 +98,11 @@ class MapMuaThuMan1Scene:
             Boss1(self.game.map_width - 400, 300, folder_qv, sound_qv),
         ]
         
-        # Boss yếu hơn cho màn 1
+        # Boss mạnh hơn cho màn 1
         for boss in self.bosses:
-            boss.hp = int(boss.hp * 0.7)  # 30% ít máu hơn
-            boss.damage = int(boss.damage * 0.8)  # 20% ít sát thương hơn
-            boss.speed = boss.speed * 0.9  # Chậm hơn 10%
+            boss.hp = int(boss.hp * 1.0)  # Tăng từ 0.7 lên 1.0 (HP chuẩn)
+            boss.damage = int(boss.damage * 1.0)  # Tăng từ 0.8 lên 1.0 (damage chuẩn)
+            boss.speed = boss.speed * 1.0  # Tăng từ 0.9 lên 1.0 (tốc độ chuẩn)
             
         self.current_boss_index = 0
         self.current_boss = None
@@ -143,7 +147,10 @@ class MapMuaThuMan1Scene:
         if self.action_buttons.handle_event(event, player=self.player):
             return
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
+                        # Skill activation - F key (chỉ cho Chiến Thần Lạc Hồng)
+            if event.key == pygame.K_f and "chien_than_lac_hong" in self.player.folder:
+                self.activate_skill()
+            elif event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
 
 
@@ -159,8 +166,61 @@ class MapMuaThuMan1Scene:
                 # Chuyển sang màn 2 mùa thu
                 self.game.change_scene("map_mua_thu_man2")
 
+    
+    def activate_skill(self):
+        """Kích hoạt skill video cho Chiến Thần Lạc Hồng"""
+        if self.player.can_use_skill():
+            # Tạo video player với callback
+            video_path = "Tai_nguyen/video/skill_chien_than.mp4"
+            self.skill_video = SkillVideoPlayer(video_path, self.on_skill_finish)
+            self.showing_skill_video = True
+            
+            # Sử dụng skill (trừ mana, reset cooldown)
+            self.player.use_skill()
+            print("[SKILL] Chiến Thần Lạc Hồng activated skill!")
+    
+    def on_skill_finish(self):
+        """Callback khi skill video kết thúc"""
+        print("[SKILL] Video finished, dealing damage to enemies...")
+        self.damage_nearby_enemies()
+        self.showing_skill_video = False
+        self.skill_video = None
+    
+    def damage_nearby_enemies(self):
+        """Gây damage cho tất cả quái vật trong phạm vi skill"""
+        damage_count = 0
+        
+        # Damage normal enemies
+        for enemy in self.normal_enemies[:]:
+            distance = abs(enemy.x - self.player.x)
+            if distance <= self.player.skill_range:
+                enemy.hp -= self.player.skill_damage
+                damage_count += 1
+                if enemy.hp <= 0:
+                    self.normal_enemies.remove(enemy)
+                    if hasattr(self.player, 'score'):
+                        self.player.score += enemy.score_value
+        
+        # Damage current boss if exists
+        if hasattr(self, 'current_boss') and self.current_boss:
+            distance = abs(self.current_boss.x - self.player.x)
+            if distance <= self.player.skill_range:
+                self.current_boss.hp -= self.player.skill_damage
+                damage_count += 1
+                if self.current_boss.hp <= 0:
+                    if hasattr(self.player, 'score'):
+                        self.player.score += self.current_boss.score_value
+                    if hasattr(self, 'spawn_next_boss'):
+                        self.spawn_next_boss()
+        
+        print(f"[SKILL] Damaged {damage_count} enemies!")
 
     def update(self):
+        # Update skill video if showing
+        if self.showing_skill_video and self.skill_video:
+            self.skill_video.update()
+            return  # Pause game logic while showing skill video
+        
         keys = pygame.key.get_pressed()
 
         # Update UI
@@ -204,6 +264,11 @@ class MapMuaThuMan1Scene:
                 if enemy.hp > 0:
                     # Cập nhật AI quái vật với vùng hoạt động
                     enemy.update(target=self.player)
+                    
+                    # Reset enemy damaged flag khi không còn tấn công
+                    if not enemy.attacking:
+                        enemy.damaged = False
+                    
                     alive_enemies.append(enemy)
                 else:
                     # Nếu quái vừa chết và có drops, thu thập chúng vào scene
@@ -222,6 +287,10 @@ class MapMuaThuMan1Scene:
             # Boss update
             if self.current_boss and not self.current_boss.dead:
                 self.current_boss.update(target=self.player)
+                
+                # Reset boss damaged flag khi không còn tấn công
+                if not self.current_boss.attacking:
+                    self.current_boss.damaged = False
 
             # Reset player damaged flag dựa trên trạng thái của tất cả enemies
             any_enemy_attacking = any(enemy.attacking and enemy.state in ["danh", "da"] for enemy in self.normal_enemies)
@@ -262,7 +331,8 @@ class MapMuaThuMan1Scene:
                             max_frames = len(enemy.animations[enemy.state])
                             damage_frame_threshold = max(1, int(max_frames * 0.8))
                             if enemy.frame >= damage_frame_threshold:
-                                self.player.take_damage(enemy.damage, enemy.flip)
+                                enemy_damage = getattr(enemy, 'damage', 10)  # Default 10 if not set
+                                self.player.take_damage(enemy_damage, enemy.flip)
                                 self.player.damaged = True
             # Va chạm với boss
             if self.current_boss:
@@ -373,7 +443,12 @@ class MapMuaThuMan1Scene:
 
 
     def draw(self, screen):
-        # Vẽ các lớp nền phía sau (từ xa đến gần)
+        # If showing skill video, render it first
+        if self.showing_skill_video and self.skill_video:
+            screen.fill((0, 0, 0))  # Black background
+            self.skill_video.draw(screen)
+            return  # Don't draw game elements during skill video
+                # Vẽ các lớp nền phía sau (từ xa đến gần)
         self.parallax_bg.draw_background_layers(screen, self.camera_x)
         
         # Vẽ hiệu ứng lá rơi phía sau nhân vật
@@ -414,3 +489,73 @@ class MapMuaThuMan1Scene:
 
         # Draw UI buttons and HUD on top
         self.action_buttons.draw(screen, player=self.player)
+        # Draw skill UI if player is Chiến Thần Lạc Hồng
+        if "chien_than_lac_hong" in self.player.folder:
+            self.draw_skill_ui(screen)
+    def draw_skill_ui(self, screen):
+        """Vẽ UI skill ở góc trên bên trái, dưới thanh máu/mana"""
+        # Position below HP/Mana bars
+        ui_x = 20
+        ui_y = 84  # Below mana bar (20 + 30 + 8 + 18 + 8)
+        ui_width = 300
+        ui_height = 50
+        
+        # Background panel
+        panel_rect = pygame.Rect(ui_x, ui_y, ui_width, ui_height)
+        pygame.draw.rect(screen, (20, 20, 40), panel_rect)
+        pygame.draw.rect(screen, (255, 215, 0), panel_rect, 2)  # Golden border
+        
+        # Skill icon with F key
+        icon_size = 40
+        icon_x = ui_x + 5
+        icon_y = ui_y + 5
+        icon_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
+        pygame.draw.rect(screen, (50, 50, 100), icon_rect)
+        pygame.draw.rect(screen, (255, 215, 0), icon_rect, 2)
+        
+        # F key text
+        font_key = pygame.font.Font("Tai_nguyen/font/Fz-Futurik.ttf", 24)
+        key_text = font_key.render("F", True, (255, 255, 255))
+        screen.blit(key_text, (icon_x + icon_size//2 - key_text.get_width()//2, 
+                               icon_y + icon_size//2 - key_text.get_height()//2))
+        
+        # Skill name and cooldown info
+        font_title = pygame.font.Font("Tai_nguyen/font/Fz-Futurik.ttf", 18)
+        font_small = pygame.font.Font("Tai_nguyen/font/Fz-Futurik.ttf", 14)
+        
+        text_x = icon_x + icon_size + 10
+        
+        # Title
+        title_text = font_title.render("SKILL CHIẾN THẦN", True, (255, 215, 0))
+        screen.blit(title_text, (text_x, ui_y + 5))
+        
+        # Cooldown display
+        remaining = self.player.get_skill_cooldown_remaining()
+        if remaining > 0:
+            cd_text = font_small.render(f"Hồi chiêu: {remaining:.1f}s", True, (255, 150, 150))
+        else:
+            cd_text = font_small.render(f"Hồi chiêu: 30s", True, (150, 150, 150))
+        screen.blit(cd_text, (text_x, ui_y + 28))
+        
+        # Status indicator on the right
+        status_x = ui_x + ui_width - 70
+        status_y = ui_y + ui_height // 2 - 15
+        
+        if remaining > 0:
+            # Show countdown timer
+            timer_text = font_title.render(f"{int(remaining)}s", True, (255, 100, 100))
+            screen.blit(timer_text, (status_x, status_y))
+        else:
+            # Show READY with pulsing glow
+            ready_text = font_title.render("READY!", True, (0, 255, 0))
+            
+            # Pulsing glow effect
+            import math
+            glow_alpha = int(155 + 100 * math.sin(pygame.time.get_ticks() / 200))
+            glow_surface = pygame.Surface((ready_text.get_width() + 10, ready_text.get_height() + 10))
+            glow_surface.fill((0, 255, 0))
+            glow_surface.set_alpha(glow_alpha)
+            screen.blit(glow_surface, (status_x - 5, status_y - 5))
+            
+            screen.blit(ready_text, (status_x, status_y))
+

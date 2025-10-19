@@ -1,0 +1,38 @@
+# 🎵 ĐẶT FILE ÂM THANH SKILL VÀO ĐÂY
+
+## Tên File Cần Thêm
+
+```
+skill_chien_than.mp3    ← File âm thanh cho skill Chiến Thần
+```
+
+hoặc
+
+```
+skill_chien_than.wav
+skill_chien_than.ogg
+```
+
+## Khuyến Nghị
+
+- **Format**: MP3 (nhỏ gọn, chất lượng tốt)
+- **Bitrate**: 128-192 kbps
+- **Thời lượng**: ~7-8 giây (giống video)
+- **Sample rate**: 44100 Hz
+
+## Sau Khi Thêm
+
+Chạy test:
+```bash
+python demo_skill_video.py
+```
+
+Hoặc test in-game:
+```bash
+python ma_nguon/main.py
+# Chọn Chiến Thần → Vào map → Nhấn F
+```
+
+## Nếu Không Có Audio
+
+Không sao! Video vẫn phát bình thường (không lỗi).
