@@ -1,12 +1,20 @@
 import pygame
 import sys
 import math
+from ma_nguon.core import high_scores
 
 class GameOverScene:
     def __init__(self, game, level_name="Unknown", score=0):
         self.game = game
         self.level_name = level_name
         self.score = score
+        # Save score to leaderboard (non-fatal)
+        try:
+            user = getattr(self.game, 'current_user', None) or 'Guest'
+            key = level_name.replace(' ', '_').lower()
+            high_scores.add_score(key, user, int(score))
+        except Exception:
+            pass
         
         # Fonts
         self.title_font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 80)
@@ -130,6 +138,20 @@ class GameOverScene:
         
         screen.blit(level_text, (screen_width // 2 - level_text.get_width() // 2, title_y + title_scaled.get_height() + 20))
         screen.blit(score_text, (screen_width // 2 - score_text.get_width() // 2, title_y + title_scaled.get_height() + 60))
+
+        # Show top 5 scores for this level
+        try:
+            key = self.level_name.replace(' ', '_').lower()
+            top = high_scores.get_top_scores(key, 5)
+            hs_y = title_y + title_scaled.get_height() + 100
+            hs_title = self.info_font.render("Bảng xếp hạng", True, (230, 230, 230))
+            screen.blit(hs_title, (screen_width // 2 - hs_title.get_width() // 2, hs_y))
+            for i, e in enumerate(top):
+                txt = f"{i+1}. {e.get('user','Guest')} - {e.get('score',0)}"
+                txt_s = self.info_font.render(txt, True, (200,200,200))
+                screen.blit(txt_s, (screen_width // 2 - txt_s.get_width() // 2, hs_y + 30 + i * 28))
+        except Exception:
+            pass
         
         # Buttons
         button_start_y = screen_height // 2 + 50
