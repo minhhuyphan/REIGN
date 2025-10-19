@@ -50,5 +50,13 @@
         "speed": "Giày Thiên Thần"
       }
     }
+  },
+  "huy": {
+    "gold": 62,
+    "purchased_characters": [
+      "chien_binh",
+      "tho_san_quai_vat"
+    ],
+    "character_equipment": {}
   }
 }

@@ -40,12 +40,12 @@ class Game:
         # Load profile for current user if any
         if self.current_user:
             self.profile = profile_manager.load_profile(self.current_user)
-            # Auto-login: skip login screen and go to menu
-            self.current_scene = MenuScene(self)
         else:
             self.profile = None
-            # Show login screen
-            self.current_scene = LoginScene(self)
+        
+        # Bắt đầu với intro video
+        from ma_nguon.man_choi.intro_video import IntroVideoScene
+        self.current_scene = IntroVideoScene(self)
 
     def save_current_profile(self):
         if not self.current_user or not self.profile:
@@ -56,6 +56,16 @@ class Game:
         from ma_nguon.man_choi.loading import LoadingScene
         if scene_name == "exit":
             self.running = False
+        elif scene_name == "menu":
+            # Khi chuyển sang menu, kiểm tra login
+            if self.current_user:
+                # Đã login: đi thẳng menu
+                from ma_nguon.man_choi.menu import MenuScene
+                self.current_scene = MenuScene(self)
+            else:
+                # Chưa login: đi login screen
+                from ma_nguon.man_choi.login import LoginScene
+                self.current_scene = LoginScene(self)
         elif scene_name == "chon_map":
             # Chuyển đến màn chọn map
             self.current_scene = ChonMapScene(self)
