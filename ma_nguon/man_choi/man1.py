@@ -40,7 +40,7 @@ class Level1Scene:
         self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/mat_dat.png", speed_factor=1.0, y_pos=230, repeat_x=True)
         
         # Lớp 7: Cây gần (phía trước nhân vật, di chuyển nhanh hơn camera)
-        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/cay_gan.png", speed_factor=1.2, y_pos=400, scale_factor=1.5, above_player=True)
+        self.parallax_bg.add_layer("tai_nguyen/hinh_anh/canh_nen/man1/cay_gan.png", speed_factor=1.6, y_pos=500, scale_factor=2.5, above_player=True)
 
         # Khởi tạo player
         folder_nv = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat")
@@ -64,11 +64,11 @@ class Level1Scene:
             enemy.patrol_range = 200  # Khoảng cách di chuyển tối đa từ home_x
             enemy.aggro_range = 300   # Khoảng cách phát hiện và tấn công người chơi
             self.normal_enemies.append(enemy)
-        # Khởi tạo boss
+        # Khởi tạo boss với kích thước tùy chỉnh cho từng boss
         self.bosses = [
-            Boss1(self.game.map_width - 800, 300, folder_qv, sound_qv),
-            Boss2(self.game.map_width - 500, 300, folder_qv, sound_qv),
-            Boss3(self.game.map_width - 200, 300, folder_qv, sound_qv)
+            Boss1(self.game.map_width - 800, 300, folder_qv, sound_qv, target_size=(150, 150)),
+            Boss2(self.game.map_width - 500, 260, folder_qv, sound_qv, target_size=(200, 200)),
+            Boss3(self.game.map_width - 200, 200, folder_qv, sound_qv, target_size=(250, 250))
         ]
         self.current_boss_index = 0
         self.current_boss = None

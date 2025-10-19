@@ -1,7 +1,7 @@
 {
-    "master_volume": 0.0033333333333333335,
-    "music_volume": 0.9433333333333334,
-    "sfx_volume": 0.013333333333333334,
+    "master_volume": 0.44666666666666666,
+    "music_volume": 0.63,
+    "sfx_volume": 0.31333333333333335,
     "resolution": "1024x768",
     "fullscreen": false,
     "vsync": true,

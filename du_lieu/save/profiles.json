@@ -51,7 +51,6 @@
       }
     }
   },
-<<<<<<< HEAD
   "phuc123": {
     "gold": 1,
     "purchased_characters": [
@@ -66,18 +65,24 @@
         "defense": "Giáp Ánh Sáng",
         "attack": "Kiếm Rồng"
       }
+    },
+    "huy": {
+      "gold": 624,
+      "purchased_characters": [
+        "chien_binh",
+        "tho_san_quai_vat"
+      ],
+      "character_equipment": {},
+      "equipment_inventory": [
+        "Giày Vải"
+      ]
     }
-=======
-  "huy": {
-    "gold": 624,
-    "purchased_characters": [
-      "chien_binh",
-      "tho_san_quai_vat"
-    ],
+  },
+  "phuc11": {
+    "gold": 1547,
     "character_equipment": {},
-    "equipment_inventory": [
-      "Giày Vải"
+    "purchased_characters": [
+      "chien_binh"
     ]
->>>>>>> 21ffd4156c4811eab3b0b0be04a9b87942e2ddcb
   }
 }

@@ -140,8 +140,8 @@ class MapCongNgheScene:
             try:
                 self.bosses = []
                 try:
-                    # Tạo boss dùng đúng folder boss 7 frame
-                    boss = Boss1(self.game.map_width - 400, 400, folder_boss, sound_qv)
+                    # Tạo boss dùng đúng folder boss 7 frame - vị trí mặt đất
+                    boss = Boss1(self.game.map_width - 400, 150, folder_boss, sound_qv)
                     # đảm bảo thuộc tính cơ bản tồn tại
                     if hasattr(boss, "hp"):
                         boss.hp = int(boss.hp * 2.0)
@@ -152,19 +152,18 @@ class MapCongNgheScene:
                     # scale sprite nếu tồn tại
                     if hasattr(boss, "image") and boss.image:
                         try:
-                            scale_factor = 2.5
+                            scale_factor = 1.8  # Giảm scale factor
                             orig_img = boss.image
                             ow, oh = orig_img.get_size()
                             new_w, new_h = int(ow * scale_factor), int(oh * scale_factor)
                             boss.image = pygame.transform.scale(orig_img, (new_w, new_h))
                             if hasattr(boss, "rect"):
-                                boss.rect = boss.image.get_rect(topleft=(boss.x, boss.y - (new_h - oh)))
+                                boss.rect = boss.image.get_rect(topleft=(boss.x, boss.y))
                             if hasattr(boss, "width"):
                                 boss.width = boss.image.get_width()
                             if hasattr(boss, "height"):
                                 boss.height = boss.image.get_height()
-                            if hasattr(boss, "y"):
-                                boss.y = boss.y - (new_h - oh)
+                            # Không thay đổi vị trí y để tránh boss bay lên cao
                         except Exception as e:
                             print(f"[WARNING] Không thể scale boss image: {e}")
                     boss.damaged = False
@@ -181,6 +180,15 @@ class MapCongNgheScene:
             self.current_boss_index = 0
             self.current_boss = None
             self.initial_enemy_count = total_enemies
+            
+            # Spawn boss đầu tiên ngay lập tức để kiểm tra
+            if self.bosses:
+                print(f"[DEBUG] Boss created: {len(self.bosses)} bosses available")
+                self.current_boss = self.bosses[0]
+                self.current_boss_index = 1
+                print(f"[DEBUG] Boss spawned at x={self.current_boss.x}, y={self.current_boss.y}")
+            else:
+                print("[WARNING] No bosses created!")
 
             # --- MỚI: chuẩn bị mid (quai_trung) wave ---
             # mid enemies removed by request (no mid wave will spawn)
@@ -673,9 +681,12 @@ class MapCongNgheScene:
         # Vẽ boss
         if self.current_boss and not getattr(self.current_boss, "dead", False):
             try:
-                if hasattr(self.current_boss, "x") and self.current_boss.x + 150 >= self.camera_x and self.current_boss.x - 150 <= self.camera_x + self.game.WIDTH:
-                    self.current_boss.draw(screen, self.camera_x)
-            except Exception:
+                # Vẽ boss luôn nếu nó tồn tại (bỏ điều kiện camera để debug)
+                self.current_boss.draw(screen, self.camera_x)
+                # Debug info
+                # print(f"[DEBUG] Drawing boss at x={self.current_boss.x}, y={self.current_boss.y}, camera_x={self.camera_x}")
+            except Exception as e:
+                print(f"[ERROR] Boss draw failed: {e}")
                 traceback.print_exc()
 
         # Vẽ player
