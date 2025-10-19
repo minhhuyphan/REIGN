@@ -14,5 +14,9 @@
   "test_auto_login": {
     "salt": "de84b8fbb56ef41638fd06b0458538ff",
     "pw_hash": "fae84c973c994da31bff6c57abc6194b6d017b5bb5e63c2a592fd07b761840c8"
+  },
+  "phuc123": {
+    "salt": "5ffdd238df4c71377aa1ea4672a8dfb4",
+    "pw_hash": "1c3eb6837278d1549a08c31d581631891bfe9b498ea829cd5e5a984897d0cf67"
   }
 }

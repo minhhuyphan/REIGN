@@ -49,5 +49,21 @@
         "speed": "Giày Thiên Thần"
       }
     }
+  },
+  "phuc123": {
+    "gold": 1,
+    "purchased_characters": [
+      "chien_binh"
+    ],
+    "equipment_inventory": [
+      "Cung Băng Lãm"
+    ],
+    "character_equipment": {
+      "chien_binh": {
+        "speed": "Giày Thiên Thần",
+        "defense": "Giáp Ánh Sáng",
+        "attack": "Kiếm Rồng"
+      }
+    }
   }
 }
