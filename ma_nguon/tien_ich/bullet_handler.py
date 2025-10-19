@@ -31,7 +31,7 @@ def update_bullets(player, enemies, boss=None):
             if boss and bullet.active and boss.hp > 0:
                 boss_rect = boss.image.get_rect(topleft=(boss.x, boss.y))
                 if bullet_rect.colliderect(boss_rect):
-                    boss.take_damage(bullet.damage, bullet.direction == 1)
+                    boss.take_damage(bullet.damage, bullet.direction == 1, player)
                     bullet.active = False
 
 

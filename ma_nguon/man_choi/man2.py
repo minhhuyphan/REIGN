@@ -8,6 +8,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich import bullet_handler
 
 
 class Level2Scene:
@@ -372,5 +373,8 @@ class Level2Scene:
             else:
                 remaining_items.append(item)
         self.items = remaining_items
+
+        # Vẽ đạn (bullet)
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
 
         self.action_buttons.draw(screen, player=self.player)

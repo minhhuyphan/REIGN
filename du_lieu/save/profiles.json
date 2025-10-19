@@ -52,11 +52,14 @@
     }
   },
   "huy": {
-    "gold": 62,
+    "gold": 624,
     "purchased_characters": [
       "chien_binh",
       "tho_san_quai_vat"
     ],
-    "character_equipment": {}
+    "character_equipment": {},
+    "equipment_inventory": [
+      "Giày Vải"
+    ]
   }
 }
