@@ -562,3 +562,30 @@ class Character:
             if equipment and equipment.has_burn_effect:
                 return (equipment.burn_damage, equipment.burn_duration)
         return (0, 0)
+
+    # --- Combat helpers ---
+    def attack_hitbox(self):
+        """Trả về Rect của vùng attack (hitbox) dựa trên vị trí, hướng, và loại đòn.
+        Kích thước hitbox nhỏ hơn rect nhân vật để yêu cầu đứng gần mới trúng.
+        """
+        # Basic player rect (derive from current image size)
+        if self.image:
+            rect = self.image.get_rect(topleft=(self.x, self.y))
+        else:
+            rect = pygame.Rect(self.x, self.y, 40, 80)
+
+        # Attack reach and size
+        reach = 60  # pixels in front of player
+        width = 50
+        height = rect.height // 2
+        # Vertical center aligned to upper half where hits register
+        hit_y = self.y + rect.height // 4
+
+        if getattr(self, 'flip', False):
+            # facing left: hitbox to the left
+            hit_x = self.x - reach
+        else:
+            # facing right: hitbox to the right
+            hit_x = self.x + rect.width
+
+        return pygame.Rect(hit_x, hit_y, width, height)

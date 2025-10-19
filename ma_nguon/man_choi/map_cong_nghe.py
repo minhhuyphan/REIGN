@@ -482,29 +482,31 @@ class MapCongNgheScene:
                 except Exception:
                     continue
 
-                if rect_player.colliderect(rect_enemy):
-                    # Player attack
-                    if self.player.state == "danh" and getattr(self.player, "actioning", False) and not getattr(enemy, "damaged", False):
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if getattr(self.player, "frame", 0) >= damage_frame_threshold:
-                                try:
-                                    enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
-                                    enemy.damaged = True
-                                except Exception:
-                                    traceback.print_exc()
-                    elif self.player.state == "da" and getattr(self.player, "actioning", False) and not getattr(enemy, "damaged", False):
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if getattr(self.player, "frame", 0) >= damage_frame_threshold:
-                                try:
-                                    enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
-                                    enemy.damaged = True
-                                except Exception:
-                                    traceback.print_exc()
+                # Use attack_hitbox when player is attacking for better close-range detection
+                attacked = False
+                if getattr(self.player, 'state', None) in ["danh", "da"] and getattr(self.player, 'actioning', False) and not getattr(enemy, 'damaged', False):
+                    try:
+                        hitbox = self.player.attack_hitbox()
+                        if hitbox.colliderect(rect_enemy):
+                            if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                                max_frames = len(self.player.animations[self.player.state])
+                                damage_frame_threshold = max(1, int(max_frames * 0.8))
+                                if getattr(self.player, "frame", 0) >= damage_frame_threshold:
+                                    try:
+                                        if self.player.state == "danh":
+                                            enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
+                                        else:
+                                            enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
+                                        enemy.damaged = True
+                                        attacked = True
+                                    except Exception:
+                                        traceback.print_exc()
+                    except Exception:
+                        # If attack_hitbox fails for any reason, fall back to rect collision
+                        pass
 
+                # Fallback: if not attacked and rects overlap (touching), allow enemy to still damage player
+                if not attacked and rect_player.colliderect(rect_enemy):
                     # Enemy attack
                     if getattr(enemy, "state", "") in ["danh", "da"] and not getattr(self.player, "damaged", False):
                         if hasattr(enemy, 'animations') and enemy.state in enemy.animations:

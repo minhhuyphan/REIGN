@@ -8,11 +8,11 @@ class MenuScene:
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
 
-        # Dynamic menu based on login status
+        # Dynamic menu based on login status; include leaderboard option
         if hasattr(game, 'current_user') and game.current_user:
-            self.options = ["Chọn Map", "Trang bị", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Đăng xuất", "Thoát"]
+            self.options = ["Chọn Map", "Trang bị", "Cửa hàng", "Xếp hạng", "Hướng dẫn", "Cài đặt", "Đăng xuất", "Thoát"]
         else:
-            self.options = ["Chọn Map", "Trang bị", "Cửa hàng", "Hướng dẫn", "Cài đặt", "Thoát"]
+            self.options = ["Chọn Map", "Trang bị", "Cửa hàng", "Xếp hạng", "Hướng dẫn", "Cài đặt", "Thoát"]
 
         # Animation variables
         self.bounce_offset = 0
@@ -38,36 +38,28 @@ class MenuScene:
             elif event.key == pygame.K_DOWN:
                 self.selected = (self.selected + 1) % len(self.options)
             elif event.key == pygame.K_RETURN:
-                # ✅ Xử lý từng lựa chọn menu
-                if self.selected == 0:
-                    # Chọn Map
+                # Dispatch by option label (safer than hard-coded indices)
+                selected_text = self.options[self.selected]
+                if selected_text == "Chọn Map":
                     self.game.change_scene("chon_map")
-                elif self.selected == 1:
-                    # Trang bị
+                elif selected_text == "Trang bị":
                     self.game.change_scene("equipment")
-                elif self.selected == 2:
-                    # Cửa hàng
+                elif selected_text == "Cửa hàng":
                     self.game.change_scene("shop")
-                elif self.selected == 3:
-                    # Hướng dẫn
+                elif selected_text == "Xếp hạng":
+                    self.game.change_scene("leaderboard")
+                elif selected_text == "Hướng dẫn":
                     self.game.change_scene("help")
-                elif self.selected == 4:
-                    # Cài đặt
+                elif selected_text == "Cài đặt":
                     self.game.change_scene("settings")
-                elif self.selected == 5:
-                    # Check if user is logged in
-                    if hasattr(self.game, 'current_user') and self.game.current_user:
-                        # This is "Đăng xuất" option - logout
-                        from ma_nguon.tien_ich import user_store
-                        user_store.clear_session()
-                        self.game.current_user = None
-                        self.game.profile = None
-                        self.game.change_scene('login')
-                    else:
-                        # This is "Thoát" option - exit game
-                        self.game.running = False
-                elif self.selected == 6:
-                    # "Thoát" when logged in
+                elif selected_text == "Đăng xuất":
+                    # logout
+                    from ma_nguon.tien_ich import user_store
+                    user_store.clear_session()
+                    self.game.current_user = None
+                    self.game.profile = None
+                    self.game.change_scene('login')
+                elif selected_text == "Thoát":
                     self.game.running = False
 
 

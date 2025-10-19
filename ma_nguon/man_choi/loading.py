@@ -146,6 +146,10 @@ class LoadingScene:
             
             self.game.current_scene = equipment_screen
 
+        elif self.target_scene == "leaderboard":
+            from ma_nguon.man_choi.leaderboard import LeaderboardScene
+            self.game.current_scene = LeaderboardScene(self.game)
+
 #mapninja
         elif self.target_scene == "map_ninja" or self.target_scene == "chon_man_ninja":
             from ma_nguon.man_choi.chon_man_ninja import AutumnLevelsSceneninja

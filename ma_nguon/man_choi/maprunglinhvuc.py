@@ -223,26 +223,24 @@ class MapRungLinhVucScene:
             for enemy in self.normal_enemies:
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
                 rect_enemy = enemy.image.get_rect(topleft=(enemy.x, enemy.y))
-                    
-                if rect_player.colliderect(rect_enemy):
-                    # Player chỉ gây damage ở frame cuối của đòn tấn công
-                    if self.player.state == "danh" and self.player.actioning and not enemy.damaged:
-                        # Kiểm tra xem có đang ở frame cuối của animation không
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
-                                enemy.damaged = True
-                    elif self.player.state == "da" and self.player.actioning and not enemy.damaged:
-                        # Kiểm tra frame cuối cho đòn đá
-                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
-                            max_frames = len(self.player.animations[self.player.state])
-                            damage_frame_threshold = max(1, int(max_frames * 0.8))
-                            if self.player.frame >= damage_frame_threshold:
-                                enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
-                                enemy.damaged = True
 
+                attacked = False
+                if self.player.state in ["danh", "da"] and self.player.actioning and not enemy.damaged:
+                    hitbox = self.player.attack_hitbox()
+                    if hitbox.colliderect(rect_enemy):
+                        if hasattr(self.player, 'animations') and self.player.state in self.player.animations:
+                            max_frames = len(self.player.animations[self.player.state])
+                            damage_frame_threshold = max(1, int(max_frames * 0.8))
+                            if self.player.frame >= damage_frame_threshold:
+                                if self.player.state == "danh":
+                                    enemy.take_damage(self.player.get_effective_damage(), self.player.flip, self.player)
+                                else:
+                                    enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
+                                enemy.damaged = True
+                                attacked = True
+
+                # Fallback: if not attacked and rects overlap (touching), allow enemy to still damage player
+                if not attacked and rect_player.colliderect(rect_enemy):
                     # Quái chỉ gây damage ở frame cuối của đòn tấn công
                     if enemy.state in ["danh", "da"] and not self.player.damaged:
                         # Kiểm tra xem có đang ở frame cuối của animation không
