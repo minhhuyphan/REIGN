@@ -8,7 +8,11 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+
+from ma_nguon.tien_ich import bullet_handler
+
 
 
 class MapMuaThuMan2Scene:
@@ -298,8 +302,6 @@ class MapMuaThuMan2Scene:
             any_enemy_attacking = any(enemy.attacking and enemy.state in ["danh", "da"] for enemy in self.normal_enemies)
             if self.current_boss:
                 any_enemy_attacking = any_enemy_attacking or (self.current_boss.attacking and self.current_boss.state in ["danh", "da", "nhay"])
-            
-            # Chỉ reset damaged flag khi KHÔNG có enemy nào đang tấn công
             if not any_enemy_attacking:
                 self.player.damaged = False
 
@@ -372,6 +374,9 @@ class MapMuaThuMan2Scene:
                                     boss_damage = self.current_boss.get_current_damage()
                                 self.player.take_damage(boss_damage, self.current_boss.flip)
                                 self.player.damaged = True
+            # Cập nhật đạn (bullet)
+            from ma_nguon.tien_ich import bullet_handler
+            bullet_handler.update_bullets(self.player, self.normal_enemies, self.current_boss)
         else:
             # Player chết - chuyển đến màn hình Game Over
             if not hasattr(self, 'death_timer'):
@@ -491,6 +496,7 @@ class MapMuaThuMan2Scene:
 
         # Draw UI buttons and HUD on top
         self.action_buttons.draw(screen, player=self.player)
+
         # Draw skill UI if player is Chiến Thần Lạc Hồng
         if "chien_than_lac_hong" in self.player.folder:
             self.draw_skill_ui(screen)
@@ -560,4 +566,9 @@ class MapMuaThuMan2Scene:
             screen.blit(glow_surface, (status_x - 5, status_y - 5))
             
             screen.blit(ready_text, (status_x, status_y))
+
+
+
+        # Vẽ đạn (nếu có)
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
 

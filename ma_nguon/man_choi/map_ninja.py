@@ -7,7 +7,11 @@ from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
+
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+
+from ma_nguon.tien_ich import bullet_handler
+
 
 
 class MapNinjaScene:
@@ -425,6 +429,7 @@ class MapNinjaScene:
         
         # Vẽ các lớp nền phía trước (che phủ nhân vật) nếu có
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
+
     def draw_skill_ui(self, screen):
         """Vẽ UI skill ở góc trên bên trái, dưới thanh máu/mana"""
         # Position below HP/Mana bars
@@ -491,4 +496,9 @@ class MapNinjaScene:
             screen.blit(glow_surface, (status_x - 5, status_y - 5))
             
             screen.blit(ready_text, (status_x, status_y))
+
+
+
+        # Vẽ đạn (nếu có)
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
 

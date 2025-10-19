@@ -8,7 +8,11 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+
+from ma_nguon.tien_ich import bullet_handler
+
 
 
 class MapMuaThuMan3Scene:
@@ -402,6 +406,8 @@ class MapMuaThuMan3Scene:
                 enemy.attacking = False
                 enemy.frame = 0
 
+        bullet_handler.update_bullets(self.player, self.normal_enemies, self.current_boss)
+
 
     def draw_leaf(self, screen, leaf, camera_x):
         """Vẽ một lá với hiệu ứng xoay"""
@@ -494,6 +500,7 @@ class MapMuaThuMan3Scene:
 
         # Draw UI buttons and HUD on top
         self.action_buttons.draw(screen, player=self.player)
+
         # Draw skill UI if player is Chiến Thần Lạc Hồng
         if "chien_than_lac_hong" in self.player.folder:
             self.draw_skill_ui(screen)
@@ -563,4 +570,6 @@ class MapMuaThuMan3Scene:
             screen.blit(glow_surface, (status_x - 5, status_y - 5))
             
             screen.blit(ready_text, (status_x, status_y))
+
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
 

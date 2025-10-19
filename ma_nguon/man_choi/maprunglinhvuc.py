@@ -8,7 +8,11 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+=======
+from ma_nguon.tien_ich import bullet_handler
+
 
 
 class MapRungLinhVucScene:
@@ -238,6 +242,7 @@ class MapRungLinhVucScene:
         if self.player.hp > 0:
             old_x = self.player.x  # Lưu vị trí cũ để kiểm tra va chạm biên
             self.player.update(keys)
+            bullet_handler.update_bullets(self.player, self.normal_enemies, self.current_boss)
             
             # Giới hạn nhân vật trong map
             if self.player.x < 0:
@@ -453,6 +458,7 @@ class MapRungLinhVucScene:
 
         # Vẽ Action Buttons UI (luôn ở trên cùng, không bị ảnh hưởng camera)
         self.action_buttons.draw(screen, player=self.player)
+
         # Draw skill UI if player is Chiến Thần Lạc Hồng
         if "chien_than_lac_hong" in self.player.folder:
             self.draw_skill_ui(screen)
@@ -522,4 +528,7 @@ class MapRungLinhVucScene:
             screen.blit(glow_surface, (status_x - 5, status_y - 5))
             
             screen.blit(ready_text, (status_x, status_y))
+
+
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
 

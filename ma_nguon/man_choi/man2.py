@@ -9,9 +9,11 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+
 from ma_nguon.tien_ich.bullet_handler import update_bullets, draw_bullets
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
 
+from ma_nguon.tien_ich import bullet_handler
 
 class Level2Scene:
     def __init__(self, game, player=None):
@@ -568,7 +570,11 @@ class Level2Scene:
                 remaining_items.append(item)
         self.items = remaining_items
 
+
         self.action_buttons.draw(screen, player=self.player)
         
         # Vẽ UI skill Chiến Thần Lạc Hồng
         self.draw_skill_ui(screen)
+
+       bullet_handler.draw_bullets(self.player, screen, self.camera_x)
+
