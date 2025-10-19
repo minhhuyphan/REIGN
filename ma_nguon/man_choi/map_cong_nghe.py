@@ -96,6 +96,8 @@ class MapCongNgheScene:
 
             # Khởi tạo quái vật
             folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat","quai_map_cong_nghe","quai_nho")
+            # Folder boss (chứa 7 tấm ảnh 0..6.png)
+            folder_boss = os.path.join("tai_nguyen", "hinh_anh", "quai_vat","quai_map_cong_nghe","boss")
             sound_qv = os.path.join("tai_nguyen", "am_thanh", "hieu_ung")
 
             self.normal_enemies = []
@@ -137,7 +139,8 @@ class MapCongNgheScene:
             try:
                 self.bosses = []
                 try:
-                    boss = Boss1(self.game.map_width - 400, 400, folder_qv, sound_qv)
+                    # Tạo boss dùng đúng folder boss 7 frame
+                    boss = Boss1(self.game.map_width - 400, 400, folder_boss, sound_qv)
                     # đảm bảo thuộc tính cơ bản tồn tại
                     if hasattr(boss, "hp"):
                         boss.hp = int(boss.hp * 2.0)
