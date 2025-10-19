@@ -80,16 +80,25 @@ class LoginScene:
             self.last_caret_toggle = now
 
     def draw_input_with_placeholder(self, screen, rect, text, placeholder, active):
-        pygame.draw.rect(screen, (235,235,235), rect, border_radius=6)
+        # Highlight active field
+        bg_color = (255, 255, 200) if active else (235, 235, 235)
+        pygame.draw.rect(screen, bg_color, rect, border_radius=6)
+        
+        # Draw golden border for active field
+        if active:
+            pygame.draw.rect(screen, (255, 215, 0), rect, 3, border_radius=6)
+        
         display_text = text if text else placeholder
         color = (20,20,20) if text else (130,130,130)
         surf = self.small_font.render(display_text, True, color)
         screen.blit(surf, (rect.x + 12, rect.y + 10))
-        # caret
+        
+        # caret - blinking cursor
         if active and self.caret_visible:
-            caret_x = rect.x + 12 + surf.get_width() + 2
+            text_width = self.small_font.size(text)[0] if text else 0
+            caret_x = rect.x + 12 + text_width
             caret_y = rect.y + 10
-            pygame.draw.line(screen, (20,20,20), (caret_x, caret_y), (caret_x, caret_y + surf.get_height()), 2)
+            pygame.draw.line(screen, (20,20,20), (caret_x, caret_y), (caret_x, caret_y + 32), 2)
 
     def draw(self, screen):
         screen.fill((20, 30, 50))

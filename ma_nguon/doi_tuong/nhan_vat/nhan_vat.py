@@ -52,6 +52,13 @@ class Character:
         self.burn_effect_timer = 0  # Timer for burn effect
         self.burn_effect_active = False
         
+        # Skill system (cho Chiến Thần Lạc Hồng)
+        self.skill_cooldown = 30000  # 30 giây (milliseconds)
+        self.last_skill_time = -30000  # Cho phép dùng skill ngay từ đầu
+        self.skill_mana_cost = 100  # Chi phí mana
+        self.skill_damage = 100  # Sát thương skill gây ra
+        self.skill_range = 400  # Phạm vi skill (pixel)
+        
         # Controls - sử dụng settings manager nếu không có controls được truyền vào
         self.settings_manager = get_settings_manager()
         if controls:
@@ -66,7 +73,8 @@ class Character:
                 "attack": settings_controls["attack"],
                 "kick": settings_controls["kick"],
                 "defend": settings_controls["defend"],
-                "ban": pygame.K_f
+                "ban": pygame.K_f,
+                "skill": pygame.K_f  # Phím F để dùng skill
             }
         self.color = color
         self.auto = auto
@@ -428,6 +436,34 @@ class Character:
             self.mana = min(self.max_mana, self.mana + 150)
             return True
         return False
+    
+    def can_use_skill(self):
+        """Kiểm tra xem có thể dùng skill không"""
+        now = pygame.time.get_ticks()
+        time_since_last_skill = now - self.last_skill_time
+        
+        # Kiểm tra cooldown và mana
+        if time_since_last_skill >= self.skill_cooldown and self.mana >= self.skill_mana_cost:
+            return True
+        return False
+    
+    def get_skill_cooldown_remaining(self):
+        """Lấy thời gian cooldown còn lại (giây)"""
+        now = pygame.time.get_ticks()
+        time_since_last_skill = now - self.last_skill_time
+        remaining = max(0, self.skill_cooldown - time_since_last_skill)
+        return remaining / 1000.0  # Convert to seconds
+    
+    def use_skill(self):
+        """Sử dụng skill - trả về True nếu thành công"""
+        if not self.can_use_skill():
+            return False
+        
+        # Trừ mana
+        self.mana -= self.skill_mana_cost
+        self.last_skill_time = pygame.time.get_ticks()
+        
+        return True
 
     def take_damage(self, damage, attacker_flip):
         # Nếu đang đỡ, giảm damage
