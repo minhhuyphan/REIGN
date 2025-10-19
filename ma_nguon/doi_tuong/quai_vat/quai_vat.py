@@ -323,7 +323,8 @@ class QuaiVat:
         # Vẽ thanh máu nếu quái vật còn sống
         if not self.dead:
             pygame.draw.rect(screen, (100,100,100), (draw_x, self.y-15, 60, 8))
-            pygame.draw.rect(screen, self.color, (draw_x, self.y-15, int(60*self.hp/100), 8))
+            # Luôn dùng màu đỏ cho thanh máu của quái
+            pygame.draw.rect(screen, (255, 0, 0), (draw_x, self.y-15, int(60*self.hp/100), 8))
             
             # Visual indicators for status effects
             indicator_x = draw_x + 65

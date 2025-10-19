@@ -8,6 +8,7 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich.bullet_handler import update_bullets, draw_bullets
 
 
 class Level1Scene:
@@ -204,6 +205,9 @@ class Level1Scene:
             if not any_enemy_attacking:
                 self.player.damaged = False
 
+            # Cập nhật viên đạn của player
+            update_bullets(self.player, self.normal_enemies, self.current_boss)
+
             # Va chạm với quái thường
             for enemy in self.normal_enemies:
                 rect_player = self.player.image.get_rect(topleft=(self.player.x, self.player.y))
@@ -335,6 +339,9 @@ class Level1Scene:
 
         # Vẽ nhân vật (với camera offset)
         self.player.draw(screen, self.camera_x)
+        
+        # Vẽ viên đạn
+        draw_bullets(self.player, screen, self.camera_x)
         
         # Vẽ các lớp nền phía trước (che phủ nhân vật)
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)

@@ -65,7 +65,8 @@ class Character:
                 "jump": settings_controls["jump"],
                 "attack": settings_controls["attack"],
                 "kick": settings_controls["kick"],
-                "defend": settings_controls["defend"]
+                "defend": settings_controls["defend"],
+                "ban": pygame.K_f
             }
         self.color = color
         self.auto = auto
@@ -96,13 +97,24 @@ class Character:
         self.defending = False
         self.dead = False
         self.knockback_speed = 0
-
-# Trong phương thức _load_animations, thêm xử lý scale riêng cho từng loại animation
+        
+        # Danh sách viên đạn (chỉ cho tho_san_quai_vat)
+        self.bullets = []
+        
+        # Load hình súng cho animation bắn (chỉ cho tho_san_quai_vat)
+        self.weapon_image = None
+        if "tho_san_quai_vat" in folder:
+            try:
+                weapon_path = os.path.join(folder, "chieu", "kiemkhi.png")
+                self.weapon_image = pygame.image.load(weapon_path).convert_alpha()
+                self.weapon_image = pygame.transform.scale(self.weapon_image, (80, 40))
+            except Exception as e:
+                print(f"Không load được hình súng: {e}")
 
     def _load_animations(self, folder):
         """Tải tất cả animation từ thư mục, đảm bảo tất cả có cùng kích thước"""
         animations = {}
-        action_types = ["dung_yen", "chay", "danh", "da", "nga", "do", "nhay"]
+        action_types = ["dung_yen", "chay", "danh", "da", "nga", "do", "nhay", "ban"]
         
         # Chuẩn hóa kích thước mặc định cho mọi animation
         base_width = 100
@@ -164,8 +176,9 @@ class Character:
                 scaled = pygame.transform.scale(img, (avg_width, avg_height))
                 scaled_images.append(scaled)
             animations[action] = scaled_images
-    
+        
         return animations
+    
     def start_action(self, action_type):
         if self.actioning and action_type != "nga":
             return
@@ -175,6 +188,20 @@ class Character:
             print(f"Warning: Animation {action_type} not found")
             return
             
+        # Nếu là chiêu ban thì kiểm tra mana và xem có phải nhân vật tho_san_quai_vat không
+        if action_type == "ban":
+            # Chỉ nhân vật tho_san_quai_vat mới có chiêu này
+            if "tho_san_quai_vat" not in self.folder:
+                print("Nhân vật này không có chiêu bắn!")
+                return
+            mana_cost = 40
+            if self.mana < mana_cost:
+                print("Không đủ mana để dùng chiêu!")
+                return
+            self.mana -= mana_cost
+            # Tạo viên đạn khi bắt đầu animation bắn
+            self._create_bullet()
+        
         self.actioning = True
         self.action_type = action_type
         self.state = action_type
@@ -194,7 +221,9 @@ class Character:
 
     def play_animation(self):
         now = pygame.time.get_ticks()
-        if now - self.last_update > self.animation_cooldown:
+        # Animation bắn chậm hơn các animation khác
+        cooldown = 200 if self.state == "ban" else self.animation_cooldown
+        if now - self.last_update > cooldown:
             self.last_update = now
             self.frame += 1
 
@@ -208,7 +237,7 @@ class Character:
         
         # Kiểm tra và xử lý khi animation kết thúc
         if self.frame >= max_frames:
-            if self.state in ["danh", "da", "do", "nhay"]:
+            if self.state in ["danh", "da", "do", "nhay", "ban"]:
                 self.actioning = False
                 self.state = "dung_yen"
                 self.frame = 0
@@ -299,6 +328,8 @@ class Character:
                 self.start_action("danh")
             elif self.controls.get("kick") and keys[self.controls["kick"]]:
                 self.start_action("da")
+            elif self.controls.get("ban") and keys[self.controls["ban"]]:
+                self.start_action("ban")
             elif self.controls.get("right") and keys[self.controls["right"]]:
                 self.state = "chay"
                 self.flip = False
@@ -429,6 +460,17 @@ class Character:
         else:
             # Bị đẩy lùi khi trúng đòn
             self.knockback_speed = -5 if not attacker_flip else 5
+
+    def _create_bullet(self):
+        """Tạo viên đạn khi bắn"""
+        from ma_nguon.doi_tuong.bullet import Bullet
+        # Tính vị trí xuất phát của đạn (trước mặt nhân vật)
+        direction = -1 if self.flip else 1
+        bullet_x = self.x + (20 if not self.flip else -20)
+        bullet_y = self.y + 40  # Chiều cao ngực nhân vật
+        bullet = Bullet(bullet_x, bullet_y, direction, 100, self)  # Sát thương cố định 100
+        self.bullets.append(bullet)
+        print(f"[DEBUG] Tạo viên đạn tại ({bullet_x}, {bullet_y}), hướng: {direction}, damage: 100")
 
     # --- Equipment methods ---
     def equip_item(self, equipment):
