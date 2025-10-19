@@ -1,0 +1,18 @@
+{
+  "vinh": {
+    "salt": "a4bbb61c6b43a888a1eb9579b8bb6c8e",
+    "pw_hash": "365e675a3758037db1c5ede8d70c09f232c0b794ef96b0d112e8fb7962538197"
+  },
+  "tai": {
+    "salt": "a2595c5156058ec6b1e3b8db089b24d5",
+    "pw_hash": "ccca10016aebc18820bcda93ed5c94e4277fb0c65739e7a0813fde6bca11ff8f"
+  },
+  "ngoc": {
+    "salt": "664ea1073a1ddb04ea065b08cdee5c19",
+    "pw_hash": "a2c65310b197ea1af330455528135a27426b91e38563c54fbade6e4a142b8656"
+  },
+  "test_auto_login": {
+    "salt": "de84b8fbb56ef41638fd06b0458538ff",
+    "pw_hash": "fae84c973c994da31bff6c57abc6194b6d017b5bb5e63c2a592fd07b761840c8"
+  }
+}

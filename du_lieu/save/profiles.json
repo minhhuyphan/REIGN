@@ -1,0 +1,53 @@
+{
+  "vinh": {
+    "gold": 1737,
+    "purchased_characters": [
+      "chien_binh",
+      "ninja",
+      "vo_si",
+      "chien_than_lac_hong",
+      "tho_san_quai_vat"
+    ],
+    "character_equipment": {
+      "chien_than_lac_hong": {
+        "attack": "Kiếm Rồng",
+        "speed": "Giày Thiên Thần",
+        "defense": "Giáp Ánh Sáng"
+      },
+      "chien_binh": {}
+    },
+    "equipment_inventory": [
+      "Kiếm Sắt",
+      "Giày Vải",
+      "Kiếm Bạc",
+      "Giáp Thép",
+      "Giáp Da",
+      "Cung Băng Lãm",
+      "Cung Gỗ",
+      "Cung Thép"
+    ]
+  },
+  "tai": {
+    "gold": 999999,
+    "purchased_characters": [
+      "chien_binh",
+      "ninja",
+      "tho_san_quai_vat",
+      "vo_si",
+      "chien_than_lac_hong"
+    ]
+  },
+  "test_flow_user": {
+    "gold": 0,
+    "purchased_characters": [
+      "chien_binh"
+    ],
+    "character_equipment": {
+      "chien_binh": {
+        "attack": "Kiếm Rồng",
+        "defense": "Giáp Ánh Sáng",
+        "speed": "Giày Thiên Thần"
+      }
+    }
+  }
+}
