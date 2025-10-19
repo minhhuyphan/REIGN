@@ -570,11 +570,7 @@ class Level2Scene:
                 remaining_items.append(item)
         self.items = remaining_items
 
-
         self.action_buttons.draw(screen, player=self.player)
         
         # Vẽ UI skill Chiến Thần Lạc Hồng
         self.draw_skill_ui(screen)
-
-       bullet_handler.draw_bullets(self.player, screen, self.camera_x)
-
