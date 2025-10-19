@@ -99,6 +99,9 @@ class ChonMapScene:
         self.bg_gradient_bottom = (10, 10, 30)
         self.accent_color = (100, 200, 255)
         
+        # Pre-render gradient background for performance
+        self.background = self._create_gradient_background()
+        
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -193,6 +196,19 @@ class ChonMapScene:
             # Nếu không cần chọn nhân vật, đi thẳng vào map
             self.game.change_scene(selected_map["scene_name"])
     
+    def _create_gradient_background(self):
+        """Tạo gradient background một lần để tối ưu performance"""
+        bg_surface = pygame.Surface((self.screen_width, self.screen_height))
+        for y in range(self.screen_height):
+            ratio = y / self.screen_height
+            color = (
+                int(self.bg_gradient_top[0] * (1 - ratio) + self.bg_gradient_bottom[0] * ratio),
+                int(self.bg_gradient_top[1] * (1 - ratio) + self.bg_gradient_bottom[1] * ratio),
+                int(self.bg_gradient_top[2] * (1 - ratio) + self.bg_gradient_bottom[2] * ratio)
+            )
+            pygame.draw.line(bg_surface, color, (0, y), (self.screen_width, y))
+        return bg_surface
+    
     def update(self):
         # Smooth scroll
         if abs(self.scroll_offset - self.target_scroll) > 1:
@@ -207,15 +223,8 @@ class ChonMapScene:
                     self.hover_animation[i] = max(0.0, self.hover_animation[i] - 0.05)
     
     def draw(self, screen):
-        # Vẽ gradient background
-        for y in range(self.screen_height):
-            ratio = y / self.screen_height
-            color = (
-                int(self.bg_gradient_top[0] * (1 - ratio) + self.bg_gradient_bottom[0] * ratio),
-                int(self.bg_gradient_top[1] * (1 - ratio) + self.bg_gradient_bottom[1] * ratio),
-                int(self.bg_gradient_top[2] * (1 - ratio) + self.bg_gradient_bottom[2] * ratio)
-            )
-            pygame.draw.line(screen, color, (0, y), (self.screen_width, y))
+        # Vẽ gradient background (cached)
+        screen.blit(self.background, (0, 0))
         
         # Tiêu đề
         title = self.font_big.render("CHỌN BẢN ĐỒ", True, (255, 215, 0))
