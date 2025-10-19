@@ -234,30 +234,52 @@ class QuaiVat:
             self.image = self.animations[self.state][self.frame]
 
     def take_damage(self, damage, attacker_flip, attacker=None):
-        if self.dead: 
+        if self.dead:
             return
-        self.hp -= damage
-        if self.sounds["dinh_don"]:
+
+        # If attacker object is provided, derive the damage from attacker to avoid
+        # callers accidentally passing an already-adjusted damage value (which
+        # could double-count equipment bonuses). We still accept the numeric
+        # damage parameter when attacker is None.
+        computed_damage = damage
+        try:
+            if attacker is not None:
+                # If attacker is performing a kick, include kick_damage plus attack bonus
+                atk_type = getattr(attacker, 'action_type', None)
+                if atk_type == 'da' or atk_type == 'kick':
+                    # include equipment attack bonus for kicks too
+                    computed_damage = int(getattr(attacker, 'kick_damage', 0) + attacker.get_attack_bonus())
+                else:
+                    # default: use effective damage (already includes equipment bonuses)
+                    computed_damage = int(attacker.get_effective_damage())
+        except Exception:
+            # Fallback to provided damage if anything goes wrong
+            computed_damage = damage
+
+        # Apply raw damage
+        self.hp -= computed_damage
+        if self.sounds.get("dinh_don"):
             self.sounds["dinh_don"].play()
-        
+
         # Apply special effects from attacker's equipment
         if attacker:
             # Check for slow effect
             if hasattr(attacker, 'has_slow_effect') and attacker.has_slow_effect():
                 self.apply_slow(2.0)  # 2 seconds slow
-            
+
             # Check for burn effect
             if hasattr(attacker, 'get_burn_effect'):
                 burn_dmg, burn_dur = attacker.get_burn_effect()
                 if burn_dmg > 0:
                     self.apply_burn(burn_dmg, burn_dur)
-        
+
+        # Death handling
         if self.hp <= 0:
             self.dead = True
             self.state = "nga"
             self.frame = 0
             self.image = self.animations["nga"][0]
-            if self.sounds["chet"]:
+            if self.sounds.get("chet"):
                 self.sounds["chet"].play()
             # Té ngược chiều người đánh
             self.knockback_speed = -10 if attacker_flip == False else 10

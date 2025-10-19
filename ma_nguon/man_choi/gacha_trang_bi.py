@@ -47,6 +47,9 @@ class GachaTrangBiScene:
         self.spin_angle = 0
         self.particles = []
         
+        # Pre-render gradient background for performance
+        self.background = self._create_gradient_background()
+        
     def _get_gacha_pool(self):
         """Tạo pool trang bị cho gacha với tỷ lệ rarity"""
         pool = []
@@ -178,6 +181,19 @@ class GachaTrangBiScene:
                     if not self.spinning:
                         self.game.change_scene("shop")
     
+    def _create_gradient_background(self):
+        """Tạo gradient background một lần để tối ưu performance"""
+        bg_surface = pygame.Surface((self.screen_width, self.screen_height))
+        for y in range(self.screen_height):
+            ratio = y / self.screen_height
+            color = (
+                int(20 * (1 - ratio) + 40 * ratio),
+                int(10 * (1 - ratio) + 20 * ratio),
+                int(50 * (1 - ratio) + 80 * ratio)
+            )
+            pygame.draw.line(bg_surface, color, (0, y), (self.screen_width, y))
+        return bg_surface
+    
     def update(self):
         # Spinning animation
         if self.spinning:
@@ -216,15 +232,8 @@ class GachaTrangBiScene:
             self.result_timer -= 1
     
     def draw(self, screen):
-        # Background gradient
-        for y in range(self.screen_height):
-            ratio = y / self.screen_height
-            color = (
-                int(20 * (1 - ratio) + 40 * ratio),
-                int(10 * (1 - ratio) + 20 * ratio),
-                int(50 * (1 - ratio) + 80 * ratio)
-            )
-            pygame.draw.line(screen, color, (0, y), (self.screen_width, y))
+        # Background gradient (cached)
+        screen.blit(self.background, (0, 0))
         
         if self.show_result:
             self._draw_result(screen)
