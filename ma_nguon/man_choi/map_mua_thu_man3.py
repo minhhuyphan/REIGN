@@ -8,10 +8,10 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich import bullet_handler
+from ma_nguon.tien_ich.equipment_loader import load_and_apply_equipment
 
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
-
-from ma_nguon.tien_ich import bullet_handler
 
 
 
@@ -65,6 +65,9 @@ class MapMuaThuMan3Scene:
         # Cập nhật các thuộc tính cho nhân vật
         self.player.damage = 15       # Damage đấm
         self.player.kick_damage = 20  # Damage đá
+        
+        # Load và apply equipment stats
+        load_and_apply_equipment(self.player, self.game, "MAP_MUA_THU_3")
 
         # MÀN 3: KHÓ NHẤT - NHIỀU QUÁI VÀ MẠNH
         folder_qv = os.path.join("Tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")

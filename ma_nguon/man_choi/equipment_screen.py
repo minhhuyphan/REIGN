@@ -16,6 +16,9 @@ class EquipmentScreen:
         self.player_character = player_character
         self.equipment_manager = get_equipment_manager()
         
+        # Load inventory from profile
+        self._load_inventory_from_profile()
+        
         # Character selection
         self.available_characters = self._get_available_characters()
         self.selected_character_idx = 0
@@ -66,10 +69,44 @@ class EquipmentScreen:
         self.tooltip_equipment = None
         self.tooltip_pos = (0, 0)
         
+        # Scrollbar state
+        self.scroll_offset = 0
+        self.max_scroll = 0
+        self.scrollbar_dragging = False
+        self.scrollbar_drag_offset = 0
+        
         # Animation
         self.pulse_timer = 0
         self.glow_alpha = 0
         self.glow_direction = 1
+    
+    def _load_inventory_from_profile(self):
+        """Load trang bị từ profile của user"""
+        from ma_nguon.core import profile_manager
+        
+        user = getattr(self.game, 'current_user', None)
+        if user:
+            profile = profile_manager.load_profile(user)
+            inventory = profile.get('equipment_inventory', {})
+            
+            # Convert old list format to dict
+            if isinstance(inventory, list):
+                new_inventory = {}
+                for item in inventory:
+                    new_inventory[item] = new_inventory.get(item, 0) + 1
+                inventory = new_inventory
+            
+            print(f"[EQUIPMENT_SCREEN] Loading inventory: {inventory}")
+            self.equipment_manager.load_inventory_from_profile(inventory)
+            
+            # Load character equipment (trang bị đã lắp)
+            character_equipment = profile.get('character_equipment', {})
+            if character_equipment:
+                print(f"[EQUIPMENT_SCREEN] Loading character equipment: {character_equipment}")
+                for char_id, equipment_data in character_equipment.items():
+                    self.equipment_manager.load_character_equipment(char_id, equipment_data)
+        else:
+            print("[EQUIPMENT_SCREEN] No user logged in, using default equipment")
     
     def _get_available_characters(self):
         """Lấy danh sách nhân vật có sẵn từ profile"""
@@ -117,17 +154,35 @@ class EquipmentScreen:
                 self.selected_character_idx = (self.selected_character_idx + 1) % len(self.available_characters)
                 self.current_character_id = self.available_characters[self.selected_character_idx]['id']
                 self.selected_equipment = None
-                
+        
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
                 self._handle_click(event.pos)
+            elif event.button == 4:  # Mouse wheel up
+                self.scroll_offset = max(0, self.scroll_offset - 40)
+            elif event.button == 5:  # Mouse wheel down
+                self.scroll_offset = min(self.max_scroll, self.scroll_offset + 40)
+        
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                self.scrollbar_dragging = False
                 
         elif event.type == pygame.MOUSEMOTION:
-            self._handle_hover(event.pos)
+            if self.scrollbar_dragging:
+                self._handle_scrollbar_drag(event.pos)
+            else:
+                self._handle_hover(event.pos)
     
     def _handle_click(self, mouse_pos):
         """Xử lý click chuột"""
         mx, my = mouse_pos
+        
+        # Check scrollbar click
+        scrollbar_rect = self._get_scrollbar_rect()
+        if scrollbar_rect and scrollbar_rect.collidepoint(mx, my):
+            self.scrollbar_dragging = True
+            self.scrollbar_drag_offset = my - scrollbar_rect.y
+            return
         
         # Check character card clicks
         start_x = (self.game.WIDTH - (len(self.available_characters) * (self.CHAR_CARD_SIZE + self.CHAR_CARD_MARGIN))) // 2
@@ -142,12 +197,19 @@ class EquipmentScreen:
                 self.selected_equipment = None
                 return
         
-        # Check inventory clicks
+        # Check inventory clicks (với scroll offset)
         all_equipment = self.equipment_manager.get_all_equipment()
         inventory_y_start = 320
+        items_per_row = 3  # Tăng lên 3 cột
+        
         for i, equipment in enumerate(all_equipment):
-            slot_x = self.INVENTORY_START_X + (i % 2) * (self.SLOT_SIZE + self.SLOT_MARGIN)
-            slot_y = inventory_y_start + (i // 2) * (self.SLOT_SIZE + self.SLOT_MARGIN)
+            slot_x = self.INVENTORY_START_X + (i % items_per_row) * (self.SLOT_SIZE + self.SLOT_MARGIN)
+            slot_y = inventory_y_start + (i // items_per_row) * (self.SLOT_SIZE + self.SLOT_MARGIN) - self.scroll_offset
+            
+            # Check if visible in panel
+            if slot_y < 305 or slot_y > 730:
+                continue
+            
             slot_rect = pygame.Rect(slot_x, slot_y, self.SLOT_SIZE, self.SLOT_SIZE)
             
             if slot_rect.collidepoint(mx, my):
@@ -183,6 +245,9 @@ class EquipmentScreen:
                         # Equip new item
                         self.equipment_manager.equip_to_character(self.selected_equipment, self.current_character_id)
                         self.selected_equipment = None
+                        
+                        # Auto-save sau khi equip
+                        self._save_equipment_to_profile()
                 else:
                     # Unequip if there's equipment in this slot
                     current_eq_name = self.equipment_manager.get_character_equipment(self.current_character_id).get(slot_type)
@@ -190,6 +255,9 @@ class EquipmentScreen:
                         eq = self.equipment_manager.get_equipment_by_name(current_eq_name)
                         if eq:
                             self.equipment_manager.unequip(eq, self.current_character_id)
+                            
+                            # Auto-save sau khi unequip
+                            self._save_equipment_to_profile()
                 return
     
     def _handle_hover(self, mouse_pos):
@@ -209,12 +277,19 @@ class EquipmentScreen:
                 self.hovered_char_idx = i
                 break
         
-        # Check inventory hover
+        # Check inventory hover (với scroll offset)
         all_equipment = self.equipment_manager.get_all_equipment()
         inventory_y_start = 320
+        items_per_row = 3
+        
         for i, equipment in enumerate(all_equipment):
-            slot_x = self.INVENTORY_START_X + (i % 2) * (self.SLOT_SIZE + self.SLOT_MARGIN)
-            slot_y = inventory_y_start + (i // 2) * (self.SLOT_SIZE + self.SLOT_MARGIN)
+            slot_x = self.INVENTORY_START_X + (i % items_per_row) * (self.SLOT_SIZE + self.SLOT_MARGIN)
+            slot_y = inventory_y_start + (i // items_per_row) * (self.SLOT_SIZE + self.SLOT_MARGIN) - self.scroll_offset
+            
+            # Check if visible
+            if slot_y < 305 or slot_y > 730:
+                continue
+            
             slot_rect = pygame.Rect(slot_x, slot_y, self.SLOT_SIZE, self.SLOT_SIZE)
             
             if slot_rect.collidepoint(mx, my):
@@ -241,6 +316,43 @@ class EquipmentScreen:
                         self.tooltip_equipment = equipment
                         self.tooltip_pos = (mx + 10, my + 10)
                 return
+    
+    def _handle_scrollbar_drag(self, mouse_pos):
+        """Xử lý kéo thanh cuộn"""
+        mx, my = mouse_pos
+        
+        # Calculate scrollbar area
+        scrollbar_track_y = 305
+        scrollbar_track_height = 420
+        
+        # Calculate new scroll position
+        new_y = my - self.scrollbar_drag_offset
+        new_y = max(scrollbar_track_y, min(new_y, scrollbar_track_y + scrollbar_track_height - 60))
+        
+        # Convert to scroll offset
+        if scrollbar_track_height > 60:
+            ratio = (new_y - scrollbar_track_y) / (scrollbar_track_height - 60)
+            self.scroll_offset = int(ratio * self.max_scroll)
+    
+    def _get_scrollbar_rect(self):
+        """Lấy vị trí thanh cuộn"""
+        if self.max_scroll <= 0:
+            return None
+        
+        scrollbar_x = 365
+        scrollbar_track_y = 305
+        scrollbar_track_height = 420
+        scrollbar_width = 10
+        scrollbar_handle_height = 60
+        
+        # Calculate handle position
+        if self.max_scroll > 0:
+            ratio = self.scroll_offset / self.max_scroll
+            handle_y = scrollbar_track_y + ratio * (scrollbar_track_height - scrollbar_handle_height)
+        else:
+            handle_y = scrollbar_track_y
+        
+        return pygame.Rect(scrollbar_x, int(handle_y), scrollbar_width, scrollbar_handle_height)
     
     def update(self):
         """Cập nhật logic"""
@@ -386,13 +498,32 @@ class EquipmentScreen:
                 screen.blit(indicator_surf, (card_x + 5, card_y + 5))
     
     def _draw_inventory(self, screen):
-        """Vẽ kho đồ (inventory)"""
+        """Vẽ kho đồ (inventory) với scrollbar"""
         # Draw equipment items
         inventory_y_start = 320
         all_equipment = self.equipment_manager.get_all_equipment()
+        items_per_row = 3  # 3 cột
+        
+        # Calculate max scroll
+        if all_equipment:
+            total_rows = (len(all_equipment) + items_per_row - 1) // items_per_row
+            content_height = total_rows * (self.SLOT_SIZE + self.SLOT_MARGIN)
+            visible_height = 420  # Panel height - title
+            self.max_scroll = max(0, content_height - visible_height)
+        else:
+            self.max_scroll = 0
+        
+        # Create clipping area for inventory
+        panel_rect = pygame.Rect(30, 305, 350, 420)
+        screen.set_clip(panel_rect)
+        
         for i, equipment in enumerate(all_equipment):
-            slot_x = self.INVENTORY_START_X + (i % 2) * (self.SLOT_SIZE + self.SLOT_MARGIN)
-            slot_y = inventory_y_start + (i // 2) * (self.SLOT_SIZE + self.SLOT_MARGIN)
+            slot_x = self.INVENTORY_START_X + (i % items_per_row) * (self.SLOT_SIZE + self.SLOT_MARGIN)
+            slot_y = inventory_y_start + (i // items_per_row) * (self.SLOT_SIZE + self.SLOT_MARGIN) - self.scroll_offset
+            
+            # Only draw if visible
+            if slot_y + self.SLOT_SIZE < 305 or slot_y > 730:
+                continue
             
             # Determine slot color
             if equipment == self.selected_equipment:
@@ -425,6 +556,13 @@ class EquipmentScreen:
             if equipment.equipped_to:
                 equipped_text = self.small_font.render("✓", True, (0, 255, 0))
                 screen.blit(equipped_text, (slot_x + 5, slot_y + 5))
+        
+        # Remove clipping
+        screen.set_clip(None)
+        
+        # Draw scrollbar if needed
+        if self.max_scroll > 0:
+            self._draw_scrollbar(screen)
     
     def _draw_equip_slots(self, screen):
         """Vẽ các slot trang bị"""
@@ -633,9 +771,37 @@ class EquipmentScreen:
             screen.blit(text_surf, (tooltip_x + padding, y_offset))
             y_offset += line_height
     
+    def _draw_scrollbar(self, screen):
+        """Vẽ thanh cuộn"""
+        scrollbar_x = 365
+        scrollbar_track_y = 305
+        scrollbar_track_height = 420
+        scrollbar_width = 10
+        scrollbar_handle_height = 60
+        
+        # Draw track
+        track_rect = pygame.Rect(scrollbar_x, scrollbar_track_y, scrollbar_width, scrollbar_track_height)
+        pygame.draw.rect(screen, (30, 30, 50), track_rect, border_radius=5)
+        pygame.draw.rect(screen, (80, 80, 100), track_rect, 1, border_radius=5)
+        
+        # Draw handle
+        scrollbar_rect = self._get_scrollbar_rect()
+        if scrollbar_rect:
+            # Glow if dragging
+            if self.scrollbar_dragging:
+                glow_rect = scrollbar_rect.inflate(4, 4)
+                glow_surf = pygame.Surface((glow_rect.width, glow_rect.height), pygame.SRCALPHA)
+                pygame.draw.rect(glow_surf, (*self.ACCENT_COLOR, 100), 
+                               (0, 0, glow_rect.width, glow_rect.height), border_radius=5)
+                screen.blit(glow_surf, glow_rect.topleft)
+            
+            pygame.draw.rect(screen, self.ACCENT_COLOR, scrollbar_rect, border_radius=5)
+            pygame.draw.rect(screen, (150, 200, 255), scrollbar_rect, 1, border_radius=5)
+    
     def _save_equipment_to_profile(self):
         """Lưu equipment vào profile của user hiện tại"""
         if not hasattr(self.game, 'current_user') or not self.game.current_user:
+            print("[EQUIPMENT_SCREEN] Không có user để lưu")
             return
         
         try:
@@ -644,11 +810,22 @@ class EquipmentScreen:
             # Load current profile
             profile = profile_manager.load_profile(self.game.current_user)
             
+            # Save inventory (kho trang bị)
+            inventory = {}
+            for eq in self.equipment_manager.get_all_equipment():
+                inventory[eq.name] = inventory.get(eq.name, 0) + 1
+            profile['equipment_inventory'] = inventory
+            
             # Save all character equipment
-            profile['character_equipment'] = self.equipment_manager.save_all_character_equipment()
+            character_equipment = self.equipment_manager.save_all_character_equipment()
+            profile['character_equipment'] = character_equipment
             
             # Save profile
             profile_manager.save_profile(self.game.current_user, profile)
-            print(f"✓ Đã lưu trang bị cho {self.game.current_user}")
+            print(f"[EQUIPMENT_SCREEN] ✓ Đã lưu trang bị cho {self.game.current_user}")
+            print(f"[EQUIPMENT_SCREEN] Inventory: {len(inventory)} items")
+            print(f"[EQUIPMENT_SCREEN] Character equipment saved: {character_equipment}")
         except Exception as e:
-            print(f"✗ Lỗi khi lưu trang bị: {e}")
+            print(f"[EQUIPMENT_SCREEN] ✗ Lỗi khi lưu trang bị: {e}")
+            import traceback
+            traceback.print_exc()

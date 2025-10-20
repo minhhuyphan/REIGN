@@ -1,6 +1,6 @@
 {
   "vinh": {
-    "gold": 1193,
+    "gold": 1251111111104130,
     "purchased_characters": [
       "chien_binh",
       "ninja",
@@ -9,24 +9,26 @@
       "tho_san_quai_vat"
     ],
     "character_equipment": {
-      "chien_than_lac_hong": {
-        "attack": "Kiếm Rồng",
-        "speed": "Giày Thiên Thần",
-        "defense": "Giáp Ánh Sáng"
+      "chien_binh": {
+        "attack": "Cung Băng Lãm",
+        "defense": "Giáp Ánh Sáng",
+        "speed": "Giay Phu Phep"
       },
-      "chien_binh": {}
+      "chien_than_lac_hong": {}
     },
-    "equipment_inventory": [
-      "Kiếm Sắt",
-      "Giày Vải",
-      "Kiếm Bạc",
-      "Giáp Thép",
-      "Giáp Da",
-      "Cung Băng Lãm",
-      "Cung Gỗ",
-      "Cung Thép",
-      "Giày Da"
-    ]
+    "equipment_inventory": {
+      "Kiếm Sắt": 3,
+      "Cung Băng Lãm": 1,
+      "Cung Gỗ": 5,
+      "Giày Da": 7,
+      "Giap Sat Bi Ri": 9,
+      "Giáp Sắt": 3,
+      "Kiếm Gỗ": 10,
+      "Giay Da Boc Sat": 2,
+      "Giay Phu Phep": 2,
+      "Ao Troang Bong Dem": 2,
+      "Giáp Ánh Sáng": 1
+    }
   },
   "tai": {
     "gold": 999999,

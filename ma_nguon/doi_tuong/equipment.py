@@ -33,15 +33,58 @@ class Equipment:
     def load_image(self):
         """Load hình ảnh trang bị"""
         try:
-            full_path = os.path.join("Tai_nguyen", "hinh_anh", "trang_bi", self.image_path)
-            self.image = pygame.image.load(full_path)
-            # Scale to standard size for UI
-            self.image = pygame.transform.scale(self.image, (60, 60))
+            # Try lowercase first (tai_nguyen)
+            full_path = os.path.join("tai_nguyen", "hinh_anh", "trang_bi", self.image_path)
+            if not os.path.exists(full_path):
+                # Try uppercase (Tai_nguyen)
+                full_path = os.path.join("Tai_nguyen", "hinh_anh", "trang_bi", self.image_path)
+            
+            if os.path.exists(full_path):
+                self.image = pygame.image.load(full_path).convert_alpha()
+                # Scale to standard size for UI
+                self.image = pygame.transform.scale(self.image, (60, 60))
+                print(f"[EQUIPMENT] Loaded image for {self.name}: {full_path}")
+            else:
+                raise FileNotFoundError(f"Image not found: {self.image_path}")
         except Exception as e:
-            print(f"Không thể load hình ảnh trang bị {self.name}: {e}")
-            # Create placeholder
-            self.image = pygame.Surface((60, 60))
-            self.image.fill((100, 100, 100))
+            print(f"[EQUIPMENT] Cannot load image for {self.name}: {e}")
+            print(f"[EQUIPMENT] Tried path: {self.image_path}")
+            # Create placeholder with rarity color
+            self.image = self._create_placeholder_image()
+    
+    def _create_placeholder_image(self):
+        """Tạo placeholder image khi không load được ảnh"""
+        size = 60
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        
+        # Background color based on type
+        if self.equipment_type == "attack":
+            bg_color = (200, 100, 100)
+            icon = "⚔"
+        elif self.equipment_type == "defense":
+            bg_color = (100, 200, 100)
+            icon = "🛡"
+        elif self.equipment_type == "speed":
+            bg_color = (100, 150, 255)
+            icon = "⚡"
+        else:
+            bg_color = (150, 150, 150)
+            icon = "?"
+        
+        # Draw background
+        pygame.draw.rect(surface, bg_color, (0, 0, size, size), border_radius=8)
+        pygame.draw.rect(surface, (255, 255, 255), (0, 0, size, size), 2, border_radius=8)
+        
+        # Draw icon text
+        try:
+            font = pygame.font.Font(None, 32)
+            text = font.render(icon, True, (255, 255, 255))
+            text_rect = text.get_rect(center=(size//2, size//2))
+            surface.blit(text, text_rect)
+        except:
+            pass
+        
+        return surface
             
     def draw(self, surface, x, y):
         """Vẽ trang bị tại vị trí (x, y)"""
@@ -68,57 +111,66 @@ class Equipment:
         return desc.strip()
 
 
-class CungBangLam(Equipment):
-    """Cung băng lãm - Trang bị công"""
-    def __init__(self):
-        super().__init__("Cung Băng Lãm", "attack", "trang_bi_cong/cung_bang_lam.png")
-        self.attack_bonus = 8
-        self.has_slow_effect = True
-
-
-class KiemRong(Equipment):
-    """Kiếm rồng - Trang bị công"""
-    def __init__(self):
-        super().__init__("Kiếm Rồng", "attack", "trang_bi_cong/kiem_rong.png")
-        self.attack_bonus = 10
-        self.has_burn_effect = True
-        self.burn_damage = 1
-        self.burn_duration = 30
-
-
-class GiapAnhSang(Equipment):
-    """Giáp ánh sáng - Trang bị thủ"""
-    def __init__(self):
-        super().__init__("Giáp Ánh Sáng", "defense", "trang_bi_thu/giap_anh_sang.png")
-        self.hp_bonus = 200
-        self.has_revive_effect = True
-        self.revive_hp_percent = 50
-
-
-class GiayThienThan(Equipment):
-    """Giày thiên thần - Trang bị tốc độ"""
-    def __init__(self):
-        super().__init__("Giày Thiên Thần", "speed", "trang_bi_toc_chay/giay_thien_than.png")
-        self.speed_bonus = 2
-        self.hp_bonus = 50
-
-
 class EquipmentManager:
     """Quản lý tất cả trang bị trong game"""
     def __init__(self):
         self.all_equipment = []
         # Track equipment for each character: {character_id: {slot_type: equipment_name}}
         self.character_equipment = {}
-        self.initialize_equipment()
+        self.profile_inventory = {}  # Track inventory from profile
+        # Không cần initialize_equipment nữa vì sẽ load từ profile
         
-    def initialize_equipment(self):
-        """Khởi tạo danh sách trang bị có sẵn"""
-        self.all_equipment = [
-            CungBangLam(),
-            KiemRong(),
-            GiapAnhSang(),
-            GiayThienThan()
-        ]
+    def load_inventory_from_profile(self, profile_inventory):
+        """Load trang bị từ profile inventory (từ gacha)
+        profile_inventory format: {item_name: count}
+        """
+        from ma_nguon.doi_tuong.items import EQUIPMENT_DATA
+        
+        self.profile_inventory = profile_inventory
+        self.all_equipment = []  # Clear current
+        
+        # Create equipment objects từ inventory
+        for item_name, count in profile_inventory.items():
+            item_data = EQUIPMENT_DATA.get(item_name)
+            if not item_data:
+                continue
+            
+            # Create equipment với số lượng count
+            for i in range(count):
+                eq = self._create_equipment_from_data(item_name, item_data)
+                if eq:
+                    self.all_equipment.append(eq)
+    
+    def _create_equipment_from_data(self, item_name, item_data):
+        """Tạo Equipment object từ EQUIPMENT_DATA"""
+        eq_type = item_data.get("type", "attack")
+        image_path = item_data.get("image_path", "")
+        
+        # image_path từ EQUIPMENT_DATA đã là đường dẫn tương đối từ trang_bi
+        # VD: "trang_bi_vang/trang_bi_cong/kiem_rong.png"
+        # Không cần cắt gì thêm, giữ nguyên
+        
+        print(f"[EQUIPMENT] Creating {item_name} with image_path: {image_path}")
+        eq = Equipment(item_name, eq_type, image_path)
+        
+        # Set stats
+        eq.attack_bonus = item_data.get("attack_bonus", 0)
+        eq.hp_bonus = item_data.get("hp_bonus", 0)
+        eq.speed_bonus = item_data.get("speed_bonus", 0)
+        
+        # Set special effects
+        effects = item_data.get("effects", [])
+        if "burn" in effects or "burn_area" in effects:
+            eq.has_burn_effect = True
+            eq.burn_damage = 2
+            eq.burn_duration = 30
+        if "slow" in effects or "freeze" in effects:
+            eq.has_slow_effect = True
+        if "revive" in effects:
+            eq.has_revive_effect = True
+            eq.revive_hp_percent = 50
+        
+        return eq
         
     def get_equipment_by_type(self, equipment_type):
         """Lấy danh sách trang bị theo loại"""

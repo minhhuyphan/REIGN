@@ -11,6 +11,8 @@ from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 from ma_nguon.tien_ich.bullet_handler import update_bullets, draw_bullets
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+from ma_nguon.doi_tuong.equipment import get_equipment_manager
+from ma_nguon.tien_ich.equipment_loader import load_and_apply_equipment
 
 
 class Level1Scene:
@@ -50,6 +52,9 @@ class Level1Scene:
         self.player = Character(100, 300, folder_nv, color=(0,255,0))
         self.player.damage = 15       # Damage đấm
         self.player.kick_damage = 20  # Damage đá
+        
+        # Load và apply equipment stats
+        load_and_apply_equipment(self.player, self.game, "LEVEL1")
 
         # Khởi tạo quái vật thường dọc theo map dài
         folder_qv = os.path.join("tai_nguyen", "hinh_anh", "quai_vat", "quai_vat_bay")
@@ -112,6 +117,142 @@ class Level1Scene:
         self.cutscene_clip = mp.VideoFileClip(video_path)
         self.clip_duration = self.cutscene_clip.duration
         self.clip_start_time = pygame.time.get_ticks()
+    
+    def _load_and_apply_equipment(self):
+        """Load trang bị từ profile và apply stats vào player"""
+        try:
+            from ma_nguon.core import profile_manager
+            
+            # Get current user
+            user = getattr(self.game, 'current_user', None)
+            if not user:
+                print("[LEVEL1] Không có user, skip load equipment")
+                return
+            
+            # Load profile
+            profile = profile_manager.load_profile(user)
+            
+            # Get player character ID (dựa vào folder name hoặc character_id)
+            player_char_id = getattr(self.player, 'character_id', None)
+            if player_char_id:
+                print(f"[LEVEL1] ✓ Character ID từ character_id: {player_char_id}")
+            else:
+                # Nếu không có, thử lấy từ folder
+                if hasattr(self.player, 'folder_animations'):
+                    folder_name = os.path.basename(self.player.folder_animations)
+                    player_char_id = folder_name
+                    print(f"[LEVEL1] Character ID từ folder_animations: {player_char_id}")
+                elif hasattr(self.player, 'folder'):
+                    # Lấy từ folder path
+                    folder_name = os.path.basename(self.player.folder)
+                    player_char_id = folder_name
+                    print(f"[LEVEL1] Character ID từ folder: {player_char_id}")
+                else:
+                    print("[LEVEL1] ⚠️ Không xác định được character ID")
+                    return
+            
+            # Load equipment manager
+            equipment_manager = get_equipment_manager()
+            
+            # Load inventory from profile
+            inventory = profile.get('equipment_inventory', {})
+            if inventory:
+                equipment_manager.load_inventory_from_profile(inventory)
+            
+            # Load character equipment
+            character_equipment = profile.get('character_equipment', {})
+            if character_equipment:
+                for char_id, equipment_data in character_equipment.items():
+                    equipment_manager.load_character_equipment(char_id, equipment_data)
+            
+            # Get equipment for this character
+            char_equipment = equipment_manager.get_character_equipment(player_char_id)
+            
+            print(f"[LEVEL1] Tìm kiếm trang bị cho: {player_char_id}")
+            print(f"[LEVEL1] Character equipment data: {char_equipment}")
+            
+            if not char_equipment:
+                print(f"[LEVEL1] ⚠️ Nhân vật {player_char_id} chưa có trang bị")
+                return
+            
+            # Apply stats bonuses
+            total_attack = 0
+            total_hp = 0
+            total_speed = 0
+            
+            # Special effects
+            has_revive = False
+            has_slow = False
+            has_burn = False
+            
+            for slot_type, eq_name in char_equipment.items():
+                eq = equipment_manager.get_equipment_by_name(eq_name)
+                if eq:
+                    total_attack += eq.attack_bonus
+                    total_hp += eq.hp_bonus
+                    total_speed += eq.speed_bonus
+                    
+                    print(f"[LEVEL1] Trang bị: {eq.name} ({slot_type})")
+                    print(f"[LEVEL1]   - Stats: +{eq.attack_bonus} ATK, +{eq.hp_bonus} HP, +{eq.speed_bonus} SPD")
+                    print(f"[LEVEL1]   - has_revive_effect: {eq.has_revive_effect}")
+                    print(f"[LEVEL1]   - has_slow_effect: {eq.has_slow_effect}")
+                    print(f"[LEVEL1]   - has_burn_effect: {eq.has_burn_effect}")
+                    
+                    # Check special effects
+                    if eq.has_revive_effect:
+                        has_revive = True
+                        print(f"[LEVEL1] {eq.name}: ⚡ Phát hiện hiệu ứng HỒI SINH {eq.revive_hp_percent}%")
+                    
+                    if eq.has_slow_effect:
+                        has_slow = True
+                        print(f"[LEVEL1] {eq.name}: ❄️ Phát hiện hiệu ứng LÀM CHẬM")
+                    
+                    if eq.has_burn_effect:
+                        has_burn = True
+                        print(f"[LEVEL1] {eq.name}: 🔥 Phát hiện hiệu ứng THIÊU ĐỐT {eq.burn_damage} DMG/{eq.burn_duration}s")
+                else:
+                    print(f"[LEVEL1] ⚠️ Không tìm thấy equipment: {eq_name}")
+            
+            # Apply to player stats
+            if total_attack > 0:
+                self.player.damage += total_attack
+                self.player.kick_damage += total_attack
+                print(f"[LEVEL1] Tổng cộng DAMAGE: +{total_attack}")
+            
+            if total_hp > 0:
+                self.player.max_health += total_hp
+                self.player.health += total_hp
+                print(f"[LEVEL1] Tổng cộng HP: +{total_hp}")
+            
+            if total_speed > 0:
+                self.player.speed += total_speed
+                print(f"[LEVEL1] Tổng cộng SPEED: +{total_speed}")
+            
+            # Apply special effects to player
+            if has_revive:
+                self.player.has_revive = True
+                self.player.revive_used = False
+                self.player.revive_hp_percent = 50  # Hồi sinh với 50% HP
+                print(f"[LEVEL1] ⚡ Kích hoạt HỒI SINH - Revive 50% HP khi chết")
+            
+            if has_slow:
+                self.player.attacks_slow_enemies = True  # Đánh chậm địch
+                print(f"[LEVEL1] ❄️ Kích hoạt LÀM CHẬM - Giảm 50% tốc độ địch 3s")
+            
+            if has_burn:
+                self.player.attacks_burn_enemies = True  # Đánh thiêu địch
+                self.player.burn_damage = 1  # 1 HP/giây
+                self.player.burn_duration = 30  # 30 giây
+                print(f"[LEVEL1] 🔥 Kích hoạt THIÊU ĐỐT - 1 DMG/giây x 30s")
+            
+            print(f"[LEVEL1] ✓ Đã áp dụng trang bị cho {player_char_id}")
+            print(f"[LEVEL1] Stats: DMG={self.player.damage}, HP={self.player.max_hp}, SPD={self.player.speed}")
+            print(f"[LEVEL1] Effects: Revive={has_revive}, Slow={has_slow}, Burn={has_burn}")
+            
+        except Exception as e:
+            print(f"[LEVEL1] Lỗi khi load equipment: {e}")
+            import traceback
+            traceback.print_exc()
 
 
     def handle_event(self, event):
@@ -246,6 +387,33 @@ class Level1Scene:
                 if enemy.hp > 0:
                     # Cập nhật AI quái vật với vùng hoạt động
                     enemy.update(target=self.player)
+                    
+                    # Xử lý hiệu ứng làm chậm
+                    if hasattr(enemy, 'slowed') and enemy.slowed:
+                        current_time = pygame.time.get_ticks()
+                        if current_time - enemy.slow_timer > 3000:  # 3 giây
+                            enemy.speed = enemy.original_speed
+                            enemy.slowed = False
+                            print(f"[SLOW] {enemy.__class__.__name__} hết bị chậm")
+                    
+                    # Xử lý hiệu ứng thiêu đốt
+                    if hasattr(enemy, 'burning') and enemy.burning:
+                        current_time = pygame.time.get_ticks()
+                        elapsed = (current_time - enemy.burn_start_time) / 1000.0
+                        
+                        if elapsed < enemy.burn_duration:
+                            # Gây damage mỗi giây
+                            if not hasattr(enemy, 'last_burn_tick'):
+                                enemy.last_burn_tick = current_time
+                            
+                            if current_time - enemy.last_burn_tick >= 1000:
+                                enemy.hp -= enemy.burn_damage
+                                enemy.last_burn_tick = current_time
+                                print(f"[BURN] 🔥 {enemy.__class__.__name__} mất {enemy.burn_damage} HP")
+                        else:
+                            enemy.burning = False
+                            print(f"[BURN] {enemy.__class__.__name__} hết bị thiêu")
+                    
                     alive_enemies.append(enemy)
                 else:
                     # Collect drops from dead enemies into the scene
@@ -299,6 +467,26 @@ class Level1Scene:
                                     enemy.take_damage(self.player.kick_damage, self.player.flip, self.player)
                                 enemy.damaged = True
                                 attacked = True
+                                
+                                # Apply special effects from equipment
+                                # Cung Băng Lãm - Làm chậm
+                                if hasattr(self.player, 'attacks_slow_enemies') and self.player.attacks_slow_enemies:
+                                    if not hasattr(enemy, 'slowed'):
+                                        enemy.slowed = True
+                                        enemy.original_speed = getattr(enemy, 'original_speed', enemy.speed)
+                                        enemy.speed = enemy.original_speed * 0.5  # Giảm 50% tốc độ
+                                        enemy.slow_timer = pygame.time.get_ticks()
+                                        print(f"[SLOW] ❄️ {enemy.__class__.__name__} bị làm chậm!")
+                                
+                                # Kiếm Rồng - Thiêu đốt
+                                if hasattr(self.player, 'attacks_burn_enemies') and self.player.attacks_burn_enemies:
+                                    if not hasattr(enemy, 'burning'):
+                                        enemy.burning = True
+                                        enemy.burn_damage = self.player.burn_damage
+                                        enemy.burn_duration = self.player.burn_duration
+                                        enemy.burn_start_time = pygame.time.get_ticks()
+                                        print(f"[BURN] 🔥 {enemy.__class__.__name__} bị thiêu đốt!")
+
 
                 # Fallback: if not attacked and rects overlap (touching), allow enemy to still damage player or vice versa
                 if not attacked and rect_player.colliderect(rect_enemy):
@@ -356,9 +544,27 @@ class Level1Scene:
                                 self.player.damaged = True
 
         else:
-            # Player chết - chuyển đến màn hình Game Over
+            # Player chết - kiểm tra hiệu ứng hồi sinh
             if not hasattr(self, 'death_timer'):
                 self.death_timer = pygame.time.get_ticks()
+                
+                # Kiểm tra hiệu ứng hồi sinh (Giáp Ánh Sáng)
+                if hasattr(self.player, 'has_revive') and self.player.has_revive:
+                    if not hasattr(self.player, 'revive_used') or not self.player.revive_used:
+                        # Kích hoạt hồi sinh
+                        max_hp = getattr(self.player, 'max_hp', getattr(self.player, 'max_health', 1000))
+                        revive_hp = int(max_hp * (self.player.revive_hp_percent / 100))
+                        self.player.hp = revive_hp
+                        self.player.revive_used = True
+                        self.player.damaged = False
+                        self.player.state = "dung_yen"
+                        
+                        # Reset death timer
+                        delattr(self, 'death_timer')
+                        
+                        # Flash effect và thông báo
+                        print(f"[REVIVE] ✨✨✨ HỒI SINH với {revive_hp}/{max_hp} HP! ✨✨✨")
+                        return
             
             # Cho phép animation chết hoàn thành (2 giây)
             current_time = pygame.time.get_ticks()
