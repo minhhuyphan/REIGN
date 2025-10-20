@@ -45,7 +45,7 @@ def load_sound(folder, name):
 
 
 class QuaiVat:
-    def __init__(self, x, y, folder, sound_folder, color=(255,0,0), damage=5):
+    def __init__(self, x, y, folder, sound_folder, color=(255,0,0), damage=5, target_size=(150, 150)):
         self.x = x
         self.y = y
         self.hp = 100
@@ -58,7 +58,7 @@ class QuaiVat:
         self.animation_cooldown = 120
         self.attacking = False
         self.damaged = False  # cờ để chỉ trừ HP 1 lần/đòn
-        self.target_size = (150, 150)
+        self.target_size = target_size
         self.flip = False
         self.dead = False
         self.knockback_speed = 0  # vận tốc té ngược

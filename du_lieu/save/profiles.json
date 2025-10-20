@@ -51,15 +51,38 @@
       }
     }
   },
-  "huy": {
-    "gold": 624,
+  "phuc123": {
+    "gold": 1,
     "purchased_characters": [
-      "chien_binh",
-      "tho_san_quai_vat"
+      "chien_binh"
     ],
-    "character_equipment": {},
     "equipment_inventory": [
-      "Giày Vải"
+      "Cung Băng Lãm"
+    ],
+    "character_equipment": {
+      "chien_binh": {
+        "speed": "Giày Thiên Thần",
+        "defense": "Giáp Ánh Sáng",
+        "attack": "Kiếm Rồng"
+      }
+    },
+    "huy": {
+      "gold": 624,
+      "purchased_characters": [
+        "chien_binh",
+        "tho_san_quai_vat"
+      ],
+      "character_equipment": {},
+      "equipment_inventory": [
+        "Giày Vải"
+      ]
+    }
+  },
+  "phuc11": {
+    "gold": 1547,
+    "character_equipment": {},
+    "purchased_characters": [
+      "chien_binh"
     ]
   }
 }

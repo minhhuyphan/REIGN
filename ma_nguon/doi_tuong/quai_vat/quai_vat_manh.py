@@ -5,12 +5,8 @@ import pygame
 import os
 class Boss1(QuaiVat):
     def __init__(self, x, y, folder, sound_folder, target_size=(400, 400)):
-        # QUAN TRỌNG: Không gọi super().__init__() trước vì nó sẽ load animations với target_size mặc định
-        # Thay vào đó, ta khởi tạo thuộc tính trước
-        self.target_size = target_size
-        
-        # Bây giờ mới gọi parent init
-        super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=15)
+        # Gọi parent init với target_size tùy chỉnh
+        super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=15, target_size=target_size)
         
         self.hp = 150
         self.speed = 3
@@ -79,8 +75,7 @@ class Boss1(QuaiVat):
 
 class Boss2(QuaiVat):
     def __init__(self, x, y, folder, sound_folder, target_size=(400, 400)):
-        self.target_size = target_size
-        super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=15)
+        super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=15, target_size=target_size)
         self.hp = 250
         self.speed = 4
         self.damage = 15
@@ -123,9 +118,10 @@ class Boss2(QuaiVat):
             self.knockback_speed = -5 if not attacker_flip else 5
 
 class Boss3(QuaiVat):
-    def __init__(self, x, y, folder, sound_folder, target_size=(400, 400)):
-        self.target_size = target_size
-        super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=20)
+    def __init__(self, x, y, folder, sound_folder, target_size=(600, 600)):
+        # Gọi parent init với target_size lớn hơn
+        super().__init__(x, y, folder, sound_folder, color=(255,0,0), damage=20, target_size=target_size)
+        
         self.hp = 400
         self.speed = 5
         self.damage = 20

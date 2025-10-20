@@ -13,6 +13,10 @@ class RegisterScene:
         self.confirm = ''
         self.active_field = 'username'  # or 'password' or 'confirm'
         self.message = ''
+        
+        # Cursor blinking
+        self.cursor_visible = True
+        self.cursor_timer = 0
 
         # simple UI layout
         self.card = pygame.Rect(350, 180, 900, 380)
@@ -81,7 +85,11 @@ class RegisterScene:
             self.message = 'Username đã tồn tại'
 
     def update(self):
-        pass
+        # Update cursor blinking
+        self.cursor_timer += 1
+        if self.cursor_timer >= 30:  # Blink every 30 frames (~0.5 seconds at 60 FPS)
+            self.cursor_visible = not self.cursor_visible
+            self.cursor_timer = 0
 
     def draw(self, screen):
         # Draw background
@@ -94,17 +102,60 @@ class RegisterScene:
         title = self.font.render('Đăng ký tài khoản', True, (255, 215, 0))
         screen.blit(title, (self.card.x + 40, self.card.y + 20))
 
-        # Inputs
-        pygame.draw.rect(screen, (230,230,230), self.input_rect, border_radius=6)
-        pygame.draw.rect(screen, (230,230,230), self.pw_rect, border_radius=6)
-        pygame.draw.rect(screen, (230,230,230), self.confirm_rect, border_radius=6)
+        # Inputs - Highlight active field
+        # Username field
+        username_color = (255, 255, 200) if self.active_field == 'username' else (230, 230, 230)
+        pygame.draw.rect(screen, username_color, self.input_rect, border_radius=6)
+        if self.active_field == 'username':
+            pygame.draw.rect(screen, (255, 215, 0), self.input_rect, 3, border_radius=6)
+        
+        # Password field
+        password_color = (255, 255, 200) if self.active_field == 'password' else (230, 230, 230)
+        pygame.draw.rect(screen, password_color, self.pw_rect, border_radius=6)
+        if self.active_field == 'password':
+            pygame.draw.rect(screen, (255, 215, 0), self.pw_rect, 3, border_radius=6)
+        
+        # Confirm field
+        confirm_color = (255, 255, 200) if self.active_field == 'confirm' else (230, 230, 230)
+        pygame.draw.rect(screen, confirm_color, self.confirm_rect, border_radius=6)
+        if self.active_field == 'confirm':
+            pygame.draw.rect(screen, (255, 215, 0), self.confirm_rect, 3, border_radius=6)
 
+        # Draw text
         u_text = self.small_font.render(self.username or 'Tên đăng nhập', True, (30,30,30) if self.username else (120,120,120))
         screen.blit(u_text, (self.input_rect.x + 12, self.input_rect.y + 10))
+        
         p_text = self.small_font.render('*' * len(self.password) or 'Mật khẩu', True, (30,30,30) if self.password else (120,120,120))
         screen.blit(p_text, (self.pw_rect.x + 12, self.pw_rect.y + 10))
+        
         c_text = self.small_font.render('*' * len(self.confirm) or 'Xác nhận mật khẩu', True, (30,30,30) if self.confirm else (120,120,120))
         screen.blit(c_text, (self.confirm_rect.x + 12, self.confirm_rect.y + 10))
+        
+        # Draw blinking cursor
+        if self.cursor_visible:
+            cursor_x = 0
+            cursor_y = 0
+            cursor_rect = None
+            
+            if self.active_field == 'username':
+                text_width = self.small_font.size(self.username)[0] if self.username else 0
+                cursor_x = self.input_rect.x + 12 + text_width
+                cursor_y = self.input_rect.y + 8
+                cursor_rect = self.input_rect
+            elif self.active_field == 'password':
+                text_width = self.small_font.size('*' * len(self.password))[0] if self.password else 0
+                cursor_x = self.pw_rect.x + 12 + text_width
+                cursor_y = self.pw_rect.y + 8
+                cursor_rect = self.pw_rect
+            elif self.active_field == 'confirm':
+                text_width = self.small_font.size('*' * len(self.confirm))[0] if self.confirm else 0
+                cursor_x = self.confirm_rect.x + 12 + text_width
+                cursor_y = self.confirm_rect.y + 8
+                cursor_rect = self.confirm_rect
+            
+            # Draw cursor line
+            if cursor_rect:
+                pygame.draw.line(screen, (30, 30, 30), (cursor_x, cursor_y), (cursor_x, cursor_y + 32), 2)
 
         # Buttons
         pygame.draw.rect(screen, (100,200,100), self.register_btn, border_radius=8)

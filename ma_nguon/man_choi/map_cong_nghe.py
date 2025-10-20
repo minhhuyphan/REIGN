@@ -9,6 +9,8 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+
+from ma_nguon.man_choi.skill_video import SkillVideoPlayer
 from ma_nguon.tien_ich import bullet_handler
 
 
@@ -105,6 +107,10 @@ class MapCongNgheScene:
 
             # items dropped on the ground (collected from dead enemies)
             self.items = []
+            
+            # Skill video system
+            self.skill_video = None
+            self.showing_skill_video = False
 
             tech_colors = [
                 (0, 255, 255),
@@ -140,8 +146,8 @@ class MapCongNgheScene:
             try:
                 self.bosses = []
                 try:
-                    # Tạo boss dùng đúng folder boss 7 frame
-                    boss = Boss1(self.game.map_width - 400, 400, folder_boss, sound_qv)
+                    # Tạo boss dùng đúng folder boss 7 frame - vị trí mặt đất
+                    boss = Boss1(self.game.map_width - 400, 150, folder_boss, sound_qv)
                     # đảm bảo thuộc tính cơ bản tồn tại
                     if hasattr(boss, "hp"):
                         boss.hp = int(boss.hp * 2.0)
@@ -152,19 +158,18 @@ class MapCongNgheScene:
                     # scale sprite nếu tồn tại
                     if hasattr(boss, "image") and boss.image:
                         try:
-                            scale_factor = 2.5
+                            scale_factor = 1.8  # Giảm scale factor
                             orig_img = boss.image
                             ow, oh = orig_img.get_size()
                             new_w, new_h = int(ow * scale_factor), int(oh * scale_factor)
                             boss.image = pygame.transform.scale(orig_img, (new_w, new_h))
                             if hasattr(boss, "rect"):
-                                boss.rect = boss.image.get_rect(topleft=(boss.x, boss.y - (new_h - oh)))
+                                boss.rect = boss.image.get_rect(topleft=(boss.x, boss.y))
                             if hasattr(boss, "width"):
                                 boss.width = boss.image.get_width()
                             if hasattr(boss, "height"):
                                 boss.height = boss.image.get_height()
-                            if hasattr(boss, "y"):
-                                boss.y = boss.y - (new_h - oh)
+                            # Không thay đổi vị trí y để tránh boss bay lên cao
                         except Exception as e:
                             print(f"[WARNING] Không thể scale boss image: {e}")
                     boss.damaged = False
@@ -181,6 +186,15 @@ class MapCongNgheScene:
             self.current_boss_index = 0
             self.current_boss = None
             self.initial_enemy_count = total_enemies
+            
+            # Spawn boss đầu tiên ngay lập tức để kiểm tra
+            if self.bosses:
+                print(f"[DEBUG] Boss created: {len(self.bosses)} bosses available")
+                self.current_boss = self.bosses[0]
+                self.current_boss_index = 1
+                print(f"[DEBUG] Boss spawned at x={self.current_boss.x}, y={self.current_boss.y}")
+            else:
+                print("[WARNING] No bosses created!")
 
             # --- MỚI: chuẩn bị mid (quai_trung) wave ---
             # mid enemies removed by request (no mid wave will spawn)
@@ -266,7 +280,10 @@ class MapCongNgheScene:
             print(f"[DEBUG] MapCongNgheScene.handle_event: {event}")
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
+                        # Skill activation - F key (chỉ cho Chiến Thần Lạc Hồng)
+            if event.key == pygame.K_f and "chien_than_lac_hong" in self.player.folder:
+                self.activate_skill()
+            elif event.key == pygame.K_ESCAPE:
                 try:
                     self.game.change_scene("menu")
                 except Exception:
@@ -376,8 +393,61 @@ class MapCongNgheScene:
         except Exception as e:
             print(f"[ERROR] spawn_mid_enemies failed: {e}")
             traceback.print_exc()
+    
+    def activate_skill(self):
+        """Kích hoạt skill video cho Chiến Thần Lạc Hồng"""
+        if self.player.can_use_skill():
+            # Tạo video player với callback
+            video_path = "Tai_nguyen/video/skill_chien_than.mp4"
+            self.skill_video = SkillVideoPlayer(video_path, self.on_skill_finish)
+            self.showing_skill_video = True
+            
+            # Sử dụng skill (trừ mana, reset cooldown)
+            self.player.use_skill()
+            print("[SKILL] Chiến Thần Lạc Hồng activated skill!")
+    
+    def on_skill_finish(self):
+        """Callback khi skill video kết thúc"""
+        print("[SKILL] Video finished, dealing damage to enemies...")
+        self.damage_nearby_enemies()
+        self.showing_skill_video = False
+        self.skill_video = None
+    
+    def damage_nearby_enemies(self):
+        """Gây damage cho tất cả quái vật trong phạm vi skill"""
+        damage_count = 0
+        
+        # Damage normal enemies
+        for enemy in self.normal_enemies[:]:
+            distance = abs(enemy.x - self.player.x)
+            if distance <= self.player.skill_range:
+                enemy.hp -= self.player.skill_damage
+                damage_count += 1
+                if enemy.hp <= 0:
+                    self.normal_enemies.remove(enemy)
+                    if hasattr(self.player, 'score'):
+                        self.player.score += enemy.score_value
+        
+        # Damage current boss if exists
+        if hasattr(self, 'current_boss') and self.current_boss:
+            distance = abs(self.current_boss.x - self.player.x)
+            if distance <= self.player.skill_range:
+                self.current_boss.hp -= self.player.skill_damage
+                damage_count += 1
+                if self.current_boss.hp <= 0:
+                    if hasattr(self.player, 'score'):
+                        self.player.score += self.current_boss.score_value
+                    if hasattr(self, 'spawn_next_boss'):
+                        self.spawn_next_boss()
+        
+        print(f"[SKILL] Damaged {damage_count} enemies!")
 
     def update(self):
+        # Update skill video if showing
+        if self.showing_skill_video and self.skill_video:
+            self.skill_video.update()
+            return  # Pause game logic while showing skill video
+        
         if not getattr(self, "initialized", True):
             return
 
@@ -618,6 +688,12 @@ class MapCongNgheScene:
             screen.blit(beam_surface, (x, beam['y']))
 
     def draw(self, screen):
+        # If showing skill video, render it first
+        if self.showing_skill_video and self.skill_video:
+            screen.fill((0, 0, 0))  # Black background
+            self.skill_video.draw(screen)
+            return  # Don't draw game elements during skill video
+        
         if not getattr(self, "initialized", True):
             screen.fill((0,0,0))
             try:
@@ -673,9 +749,12 @@ class MapCongNgheScene:
         # Vẽ boss
         if self.current_boss and not getattr(self.current_boss, "dead", False):
             try:
-                if hasattr(self.current_boss, "x") and self.current_boss.x + 150 >= self.camera_x and self.current_boss.x - 150 <= self.camera_x + self.game.WIDTH:
-                    self.current_boss.draw(screen, self.camera_x)
-            except Exception:
+                # Vẽ boss luôn nếu nó tồn tại (bỏ điều kiện camera để debug)
+                self.current_boss.draw(screen, self.camera_x)
+                # Debug info
+                # print(f"[DEBUG] Drawing boss at x={self.current_boss.x}, y={self.current_boss.y}, camera_x={self.camera_x}")
+            except Exception as e:
+                print(f"[ERROR] Boss draw failed: {e}")
                 traceback.print_exc()
 
         # Vẽ player
@@ -709,9 +788,79 @@ class MapCongNgheScene:
         # Draw Action Buttons HUD on top (match Map Mùa Thu)
         try:
             self.action_buttons.draw(screen, player=self.player)
+            # Draw skill UI if player is Chiến Thần Lạc Hồng
+            if "chien_than_lac_hong" in self.player.folder:
+                self.draw_skill_ui(screen)
         except Exception:
             pass
 
-        # Vẽ đạn (bullet)
-        if self.player:
-            bullet_handler.draw_bullets(self.player, screen, self.camera_x)
+    
+    def draw_skill_ui(self, screen):
+        """Vẽ UI skill ở góc trên bên trái, dưới thanh máu/mana"""
+        # Position below HP/Mana bars
+        ui_x = 20
+        ui_y = 84  # Below mana bar (20 + 30 + 8 + 18 + 8)
+        ui_width = 300
+        ui_height = 50
+        
+        # Background panel
+        panel_rect = pygame.Rect(ui_x, ui_y, ui_width, ui_height)
+        pygame.draw.rect(screen, (20, 20, 40), panel_rect)
+        pygame.draw.rect(screen, (255, 215, 0), panel_rect, 2)  # Golden border
+        
+        # Skill icon with F key
+        icon_size = 40
+        icon_x = ui_x + 5
+        icon_y = ui_y + 5
+        icon_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
+        pygame.draw.rect(screen, (50, 50, 100), icon_rect)
+        pygame.draw.rect(screen, (255, 215, 0), icon_rect, 2)
+        
+        # F key text
+        font_key = pygame.font.Font("Tai_nguyen/font/Fz-Futurik.ttf", 24)
+        key_text = font_key.render("F", True, (255, 255, 255))
+        screen.blit(key_text, (icon_x + icon_size//2 - key_text.get_width()//2, 
+                               icon_y + icon_size//2 - key_text.get_height()//2))
+        
+        # Skill name and cooldown info
+        font_title = pygame.font.Font("Tai_nguyen/font/Fz-Futurik.ttf", 18)
+        font_small = pygame.font.Font("Tai_nguyen/font/Fz-Futurik.ttf", 14)
+        
+        text_x = icon_x + icon_size + 10
+        
+        # Title
+        title_text = font_title.render("SKILL CHIẾN THẦN", True, (255, 215, 0))
+        screen.blit(title_text, (text_x, ui_y + 5))
+        
+        # Cooldown display
+        remaining = self.player.get_skill_cooldown_remaining()
+        if remaining > 0:
+            cd_text = font_small.render(f"Hồi chiêu: {remaining:.1f}s", True, (255, 150, 150))
+        else:
+            cd_text = font_small.render(f"Hồi chiêu: 30s", True, (150, 150, 150))
+        screen.blit(cd_text, (text_x, ui_y + 28))
+        
+        # Status indicator on the right
+        status_x = ui_x + ui_width - 70
+        status_y = ui_y + ui_height // 2 - 15
+        
+        if remaining > 0:
+            # Show countdown timer
+            timer_text = font_title.render(f"{int(remaining)}s", True, (255, 100, 100))
+            screen.blit(timer_text, (status_x, status_y))
+        else:
+            # Show READY with pulsing glow
+            ready_text = font_title.render("READY!", True, (0, 255, 0))
+            
+            # Pulsing glow effect
+            import math
+            glow_alpha = int(155 + 100 * math.sin(pygame.time.get_ticks() / 200))
+            glow_surface = pygame.Surface((ready_text.get_width() + 10, ready_text.get_height() + 10))
+            glow_surface.fill((0, 255, 0))
+            glow_surface.set_alpha(glow_alpha)
+            screen.blit(glow_surface, (status_x - 5, status_y - 5))
+            
+            screen.blit(ready_text, (status_x, status_y))
+
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
+
