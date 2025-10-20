@@ -13,7 +13,10 @@ CHARACTER_STATS = {
         "defense": 2,
         "kick_damage": 20,
         "color": (0, 255, 0),
-        "price": 0
+        "price": 0,
+        "max_mana": 150,
+        "mana_regen": 3,
+        "special_skill": "clone_summon"  # Skill đặc biệt phân thân
     },
     "ninja": {
         "name": "Ninja",

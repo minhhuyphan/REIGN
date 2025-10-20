@@ -12,11 +12,13 @@ from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 
 from ma_nguon.tien_ich.bullet_handler import update_bullets, draw_bullets
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+from ma_nguon.man_choi.base_map_scene import BaseMapScene
 
 from ma_nguon.tien_ich import bullet_handler
 
-class Level2Scene:
+class Level2Scene(BaseMapScene):
     def __init__(self, game, player=None):
+        super().__init__()  # Initialize BaseMapScene
         self.game = game
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.counter = 0
@@ -130,6 +132,7 @@ class Level2Scene:
         
         # Biến đếm đã tiêu diệt tất cả kẻ địch
         self.all_enemies_defeated = False
+        self.victory_triggered = False
         
         # Hiệu ứng thời tiết (mưa)
         self.rain_drops = []
@@ -156,38 +159,10 @@ class Level2Scene:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
-            elif event.key == pygame.K_f and "chien_than_lac_hong" in self.player.folder:
-                self.activate_skill()
-
-
-    def spawn_next_boss(self):
-        if self.current_boss_index < len(self.bosses):
-            # Nếu là Boss3 thì chơi video cutscene trước
-            if self.current_boss_index == 2 and not self.cutscene_done:
-                self.play_cutscene("tai_nguyen/video/boss3_intro.mp4")
-            self.current_boss = self.bosses[self.current_boss_index]
-            self.current_boss_index += 1
-        else:
-            self.current_boss = None
-            # Kiểm tra xem đã tiêu diệt tất cả kẻ địch chưa
-            if not self.normal_enemies:
-                self.all_enemies_defeated = True
-                self.game.change_scene("victory")
-
-    def activate_skill(self):
-        """Kích hoạt skill Chiến Thần Lạc Hồng"""
-        if self.player.can_use_skill() and not self.showing_skill_video:
-            # Trừ mana và ghi nhận thời gian sử dụng skill
-            if self.player.use_skill():
-                # Tạo và phát video skill
-                video_path = os.path.join("tai_nguyen", "video", "skill_chien_than.mp4")
-                if os.path.exists(video_path):
-                    self.skill_video = SkillVideoPlayer(video_path, self.on_skill_finish)
-                    self.showing_skill_video = True
-                else:
-                    # Nếu không có video, vẫn gây damage
-                    print(f"[WARNING] Video not found: {video_path}")
-                    self.on_skill_finish()
+        
+        # Universal skill handling
+        if self.handle_universal_skill_input(event):
+            return  # Skill was handled
 
     def on_skill_finish(self):
         """Callback khi video skill kết thúc"""
@@ -318,9 +293,9 @@ class Level2Scene:
             return  # Không cập nhật game logic khi đang chiếu cutscene
         
         # Xử lý skill video nếu đang phát
-        if self.showing_skill_video and self.skill_video:
-            self.skill_video.update()
-            return  # Không update game khi đang phát skill
+        # Universal skill system update
+        if self.update_universal_skills():
+            return  # Pause game if skill video is playing  # Không update game khi đang phát skill
         
         keys = pygame.key.get_pressed()
 
@@ -488,6 +463,15 @@ class Level2Scene:
                 enemy.frame = 0
 
 
+    def get_all_enemies(self):
+        """Lấy tất cả enemies để truyền cho skill system"""
+        all_enemies = []
+        if hasattr(self, 'normal_enemies'):
+            all_enemies.extend(self.normal_enemies)
+        if hasattr(self, 'current_boss') and self.current_boss:
+            all_enemies.append(self.current_boss)
+        return all_enemies
+
     def draw(self, screen):
         # Vẽ skill video nếu đang phát (toàn màn hình)
         if self.showing_skill_video and self.skill_video:
@@ -573,4 +557,20 @@ class Level2Scene:
         self.action_buttons.draw(screen, player=self.player)
         
         # Vẽ UI skill Chiến Thần Lạc Hồng
-        self.draw_skill_ui(screen)
+        self.draw_universal_skill_ui(screen)
+
+    def spawn_next_boss(self):
+        """Spawn boss tiếp theo"""
+        print(f"[DEBUG] Spawning boss, current_boss_index: {self.current_boss_index}")
+        
+        if self.current_boss_index < len(self.bosses):
+            self.current_boss = self.bosses[self.current_boss_index]
+            print(f"[DEBUG] Boss {self.current_boss_index + 1} spawned at ({self.current_boss.x}, {self.current_boss.y})")
+            self.current_boss_index += 1
+        else:
+            # Hết boss -> victory
+            print("[BOSS] All bosses defeated")
+            if not hasattr(self, 'victory_triggered') or not self.victory_triggered:
+                print("[VICTORY] All enemies defeated!")
+                self.victory_triggered = True
+                self.game.change_scene("victory")

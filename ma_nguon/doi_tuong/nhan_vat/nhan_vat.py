@@ -52,12 +52,20 @@ class Character:
         self.burn_effect_timer = 0  # Timer for burn effect
         self.burn_effect_active = False
         
-        # Skill system (cho Chiến Thần Lạc Hồng)
+        # Skill system 
         self.skill_cooldown = 30000  # 30 giây (milliseconds)
         self.last_skill_time = -30000  # Cho phép dùng skill ngay từ đầu
-        self.skill_mana_cost = 100  # Chi phí mana
+        self.skill_mana_cost = 100  # Chi phí mana mặc định
         self.skill_damage = 100  # Sát thương skill gây ra
         self.skill_range = 400  # Phạm vi skill (pixel)
+        
+        # Special skill type dựa trên folder
+        self.special_skill = None
+        if "chien_binh" in folder:
+            self.special_skill = "clone_summon"
+            self.skill_mana_cost = 120  # Chi phí mana cao hơn cho skill phân thân
+        elif "chien_than_lac_hong" in folder:
+            self.special_skill = "damage_aoe"  # Skill gây damage khu vực
         
         # Controls - sử dụng settings manager nếu không có controls được truyền vào
         self.settings_manager = get_settings_manager()
@@ -108,6 +116,17 @@ class Character:
         
         # Danh sách viên đạn (chỉ cho tho_san_quai_vat)
         self.bullets = []
+        
+        # Clone manager cho chiến binh
+        self.clone_manager = None
+        if self.special_skill == "clone_summon":
+            # Import ở đây để tránh circular import
+            from ma_nguon.doi_tuong.nhan_vat.clone import CloneManager
+            self.clone_manager = CloneManager()
+        
+        # Flag để tránh xung đột skill và action "ban"
+        self._skill_just_activated = False
+        self._skill_activation_time = 0
         
         # Load hình súng cho animation bắn (chỉ cho tho_san_quai_vat)
         self.weapon_image = None
@@ -300,6 +319,10 @@ class Character:
         if self.dead and self.frame == len(self.animations["nga"]) - 1:
             return
 
+        # Reset skill activation flag sau 100ms để tránh xung đột lâu dài
+        if self._skill_just_activated and pygame.time.get_ticks() - self._skill_activation_time > 100:
+            self._skill_just_activated = False
+
         moving = False
         self.defending = False
         
@@ -337,7 +360,10 @@ class Character:
             elif self.controls.get("kick") and keys[self.controls["kick"]]:
                 self.start_action("da")
             elif self.controls.get("ban") and keys[self.controls["ban"]]:
-                self.start_action("ban")
+                # Chỉ thực hiện action "ban" nếu skill không vừa được kích hoạt
+                current_time = pygame.time.get_ticks()
+                if not self._skill_just_activated or (current_time - self._skill_activation_time > 100):
+                    self.start_action("ban")
             elif self.controls.get("right") and keys[self.controls["right"]]:
                 self.state = "chay"
                 self.flip = False
@@ -384,6 +410,11 @@ class Character:
                 self.running_sound_playing = False
 
         self.play_animation()
+        
+        # Cập nhật clone manager nếu có
+        if self.clone_manager:
+            # Cần truyền enemies từ scene, tạm thời dùng empty list
+            self.clone_manager.update(getattr(self, '_enemies_ref', []))
 
         # --- Nếu chết ---
         if self.hp <= 0 and not self.dead:
@@ -413,6 +444,10 @@ class Character:
             
             # Vẽ nhân vật
             surface.blit(img, (draw_x, self.y))
+        
+        # Vẽ clones nếu có
+        if self.clone_manager:
+            self.clone_manager.draw(surface, camera_x)
         
         # Không vẽ thanh máu ở đây nữa, nó sẽ được vẽ ở góc màn hình
 
@@ -463,7 +498,93 @@ class Character:
         self.mana -= self.skill_mana_cost
         self.last_skill_time = pygame.time.get_ticks()
         
+        # Thực hiện skill dựa trên loại
+        if self.special_skill == "clone_summon":
+            self._activate_clone_skill()
+        
         return True
+        
+    def _activate_clone_skill(self):
+        """Kích hoạt skill phân thân cho chiến binh"""
+        if not self.clone_manager:
+            return
+            
+        print("[SKILL] Chiến binh kích hoạt skill phân thân!")
+        
+        # Import ở đây để tránh circular import
+        from ma_nguon.doi_tuong.nhan_vat.clone import WarriorClone
+        
+        # Tạo 2 phân thân ở 2 bên nhân vật chính
+        clone_positions = [
+            (self.x - 100, self.y),  # Bên trái
+            (self.x + 100, self.y)   # Bên phải
+        ]
+        
+        for pos_x, pos_y in clone_positions:
+            clone = WarriorClone(pos_x, pos_y, self, duration=15000)  # 15 giây
+            self.clone_manager.add_clone(clone)
+            
+    def handle_skill_input(self, event, enemies_list=None):
+        """Xử lý input skill - gọi từ bất kỳ map nào"""
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_f:
+            if self.can_use_skill():
+                # Set enemies reference nếu có
+                if enemies_list:
+                    self.set_enemies_reference(enemies_list)
+                
+                # Activate skill dựa trên type
+                success = self.use_skill()
+                
+                if success:
+                    # Set flag để ngăn action "ban" trong frame này
+                    self._skill_just_activated = True
+                    self._skill_activation_time = pygame.time.get_ticks()
+                    
+                    # Return skill info để map có thể xử lý thêm (như video)
+                    return {
+                        'skill_type': self.special_skill,
+                        'success': True,
+                        'message': f"Skill {self.special_skill} activated!"
+                    }
+                else:
+                    # Return error info
+                    remaining = self.get_skill_cooldown_remaining()
+                    if remaining > 0:
+                        message = f"Cooldown: {remaining:.1f}s"
+                    else:
+                        message = f"Không đủ mana ({self.mana}/{self.skill_mana_cost})"
+                    
+                    return {
+                        'skill_type': self.special_skill,
+                        'success': False,
+                        'message': message
+                    }
+        return None
+            
+    def set_enemies_reference(self, enemies):
+        """Set reference đến danh sách enemies để clone có thể tấn công"""
+        self._enemies_ref = enemies
+        
+    def get_clone_count(self):
+        """Lấy số lượng clone đang hoạt động"""
+        if not self.clone_manager:
+            return 0
+        return self.clone_manager.get_active_count()
+        
+    def get_clone_info(self):
+        """Lấy thông tin về clones (để hiển thị UI)"""
+        if not self.clone_manager or not self.clone_manager.clones:
+            return []
+            
+        info = []
+        for clone in self.clone_manager.clones:
+            if clone.active:
+                info.append({
+                    'hp': clone.hp,
+                    'max_hp': clone.max_hp,
+                    'remaining_time': clone.get_remaining_time()
+                })
+        return info
 
     def take_damage(self, damage, attacker_flip):
         # Nếu đang đỡ, giảm damage

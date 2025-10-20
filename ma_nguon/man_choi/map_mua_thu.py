@@ -10,11 +10,13 @@ from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+from ma_nguon.man_choi.base_map_scene import BaseMapScene
 from ma_nguon.tien_ich import bullet_handler
 
 
-class MapMuaThuScene:
+class MapMuaThuScene(BaseMapScene):
     def __init__(self, game, player=None):
+        super().__init__()  # Initialize BaseMapScene
         self.game = game
         self.font = pygame.font.Font("Tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.counter = 0
@@ -149,78 +151,18 @@ class MapMuaThuScene:
         if self.action_buttons.handle_event(event, player=self.player):
             return
         if event.type == pygame.KEYDOWN:
-            # Skill activation - F key (chỉ cho Chiến Thần Lạc Hồng)
-            if event.key == pygame.K_f and "chien_than_lac_hong" in self.player.folder:
-                self.activate_skill()
-            elif event.key == pygame.K_ESCAPE:
+            if event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
-
-
-    def spawn_next_boss(self):
-        if self.current_boss_index < len(self.bosses):
-            self.current_boss = self.bosses[self.current_boss_index]
-            self.current_boss_index += 1
-        else:
-            self.current_boss = None
-            # Kiểm tra xem đã tiêu diệt tất cả kẻ địch chưa
-            if not self.normal_enemies:
-                self.all_enemies_defeated = True
-                self.game.change_scene("victory")
-
-    
-    def activate_skill(self):
-        """Kích hoạt skill video cho Chiến Thần Lạc Hồng"""
-        if self.player.can_use_skill():
-            # Tạo video player với callback
-            video_path = "Tai_nguyen/video/skill_chien_than.mp4"
-            self.skill_video = SkillVideoPlayer(video_path, self.on_skill_finish)
-            self.showing_skill_video = True
-            
-            # Sử dụng skill (trừ mana, reset cooldown)
-            self.player.use_skill()
-            print("[SKILL] Chiến Thần Lạc Hồng activated skill!")
-    
-    def on_skill_finish(self):
-        """Callback khi skill video kết thúc"""
-        print("[SKILL] Video finished, dealing damage to enemies...")
-        self.damage_nearby_enemies()
-        self.showing_skill_video = False
-        self.skill_video = None
-    
-    def damage_nearby_enemies(self):
-        """Gây damage cho tất cả quái vật trong phạm vi skill"""
-        damage_count = 0
-        
-        # Damage normal enemies
-        for enemy in self.normal_enemies[:]:
-            distance = abs(enemy.x - self.player.x)
-            if distance <= self.player.skill_range:
-                enemy.hp -= self.player.skill_damage
-                damage_count += 1
-                if enemy.hp <= 0:
-                    self.normal_enemies.remove(enemy)
-                    if hasattr(self.player, 'score'):
-                        self.player.score += enemy.score_value
-        
-        # Damage current boss if exists
-        if hasattr(self, 'current_boss') and self.current_boss:
-            distance = abs(self.current_boss.x - self.player.x)
-            if distance <= self.player.skill_range:
-                self.current_boss.hp -= self.player.skill_damage
-                damage_count += 1
-                if self.current_boss.hp <= 0:
-                    if hasattr(self.player, 'score'):
-                        self.player.score += self.current_boss.score_value
-                    if hasattr(self, 'spawn_next_boss'):
-                        self.spawn_next_boss()
-        
-        print(f"[SKILL] Damaged {damage_count} enemies!")
+                
+        # Universal skill handling
+        if self.handle_universal_skill_input(event):
+            return  # Skill was handled
 
     def update(self):
         # Update skill video if showing
-        if self.showing_skill_video and self.skill_video:
-            self.skill_video.update()
-            return  # Pause game logic while showing skill video
+        # Universal skill system update
+        if self.update_universal_skills():
+            return  # Pause game if skill video is playing  # Pause game logic while showing skill video
         
         keys = pygame.key.get_pressed()
 
@@ -422,6 +364,15 @@ class MapMuaThuScene:
             screen.blit(rotated_leaf, rect)
 
 
+    def get_all_enemies(self):
+        """Lấy tất cả enemies để truyền cho skill system"""
+        all_enemies = []
+        if hasattr(self, 'normal_enemies'):
+            all_enemies.extend(self.normal_enemies)
+        if hasattr(self, 'current_boss') and self.current_boss:
+            all_enemies.append(self.current_boss)
+        return all_enemies
+
     def draw(self, screen):
         # If showing skill video, render it first
         if self.showing_skill_video and self.skill_video:
@@ -483,7 +434,7 @@ class MapMuaThuScene:
 
         # Draw skill UI if player is Chiến Thần Lạc Hồng
         if "chien_than_lac_hong" in self.player.folder:
-            self.draw_skill_ui(screen)
+            self.draw_universal_skill_ui(screen)
     def draw_skill_ui(self, screen):
         """Vẽ UI skill ở góc trên bên trái, dưới thanh máu/mana"""
         # Position below HP/Mana bars

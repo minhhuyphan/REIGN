@@ -81,10 +81,11 @@
     }
   },
   "phuc11": {
-    "gold": 1547,
+    "gold": 3074,
     "character_equipment": {},
     "purchased_characters": [
       "chien_binh"
-    ]
+    ],
+    "equipment_inventory": {}
   }
 }

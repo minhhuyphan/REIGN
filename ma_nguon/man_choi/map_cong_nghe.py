@@ -13,10 +13,12 @@ from ma_nguon.tien_ich import bullet_handler
 from ma_nguon.tien_ich.equipment_loader import load_and_apply_equipment
 
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+from ma_nguon.man_choi.base_map_scene import BaseMapScene
 
 
-class MapCongNgheScene:
+class MapCongNgheScene(BaseMapScene):
     def __init__(self, game, player=None):
+        super().__init__()  # Initialize BaseMapScene
         print("[DEBUG] Init MapCongNgheScene")
         self.game = game
 
@@ -284,119 +286,12 @@ class MapCongNgheScene:
             print(f"[DEBUG] MapCongNgheScene.handle_event: {event}")
 
         if event.type == pygame.KEYDOWN:
-                        # Skill activation - F key (chỉ cho Chiến Thần Lạc Hồng)
-            if event.key == pygame.K_f and "chien_than_lac_hong" in self.player.folder:
-                self.activate_skill()
-            elif event.key == pygame.K_ESCAPE:
-                try:
-                    self.game.change_scene("menu")
-                except Exception:
-                    traceback.print_exc()
-
-
-    def spawn_next_boss(self):
-        # guard: only change scene if initialized
-        if not getattr(self, "initialized", True):
-            return
-        if self.current_boss_index < len(self.bosses):
-            self.current_boss = self.bosses[self.current_boss_index]
-            self.current_boss_index += 1
-        else:
-            self.current_boss = None
-            # only check normal_enemies now (mid removed)
-            if not self.normal_enemies:
-                self.all_enemies_defeated = True
-                try:
-                    self.game.change_scene("victory")
-                except Exception:
-                    traceback.print_exc()
-
-    def spawn_mid_enemies(self):
-        # Mid enemies disabled - no action.
-        return
-
-        try:
-            # reset list and mark spawned after success
-            self.mid_enemies = []
-
-            # choose side and position ~1000 away from player
-            side = random.choice([-1, 1])
-            base_distance = 1000
-            offset = random.randint(-50, 50)
-            x_pos = int(self.player.x + side * (base_distance + offset))
-            x_pos = max(50, min(self.game.map_width - 50, x_pos))
-
-            # bright color (very saturated)
-            bright_color = (255, 220, 50)
-
-            enemy = QuaiVat(x_pos, 400, self.folder_quai_trung, self.sound_quai_trung,
-                            color=bright_color, damage=40)
-
-            # make it visually larger if sprite exists and align feet to ground
-            try:
-                # determine ground y (use player.base_y if present)
-                ground_y = getattr(self.player, "base_y", getattr(self.player, "y", 400))
-
-                if hasattr(enemy, "image") and enemy.image:
-                    orig = enemy.image
-                    scale_factor = 2.0  # adjust to make it much larger
-                    ow, oh = orig.get_size()
-                    new_w, new_h = int(ow * scale_factor), int(oh * scale_factor)
-                    enemy.image = pygame.transform.scale(orig, (new_w, new_h))
-
-                    # set enemy.y so the bottom of the sprite sits on ground_y
-                    enemy.y = ground_y - enemy.image.get_height()
-
-                    # update rect/size attributes if present and align bottom
-                    if hasattr(enemy, "rect") and enemy.rect:
-                        enemy.rect = enemy.image.get_rect(topleft=(enemy.x, enemy.y))
-                    else:
-                        # some classes use width/height
-                        if hasattr(enemy, "width"):
-                            enemy.width = enemy.image.get_width()
-                        if hasattr(enemy, "height"):
-                            enemy.height = enemy.image.get_height()
-
-                else:
-                    # if no image, fallback to aligning y value to ground
-                    enemy.y = ground_y - getattr(enemy, "height", 100)
-
-                # ensure physics flags / velocities are grounded (best-effort)
-                if hasattr(enemy, "vy"):
-                    enemy.vy = 0
-                if hasattr(enemy, "on_ground"):
-                    enemy.on_ground = True
-                if hasattr(enemy, "grounded"):
-                    enemy.grounded = True
-                # expose base_y for AI
-                enemy.base_y = ground_y
-
-            except Exception:
-                traceback.print_exc()
-
-            # behavior / stats
-            enemy.speed = 2.0
-            enemy.x = x_pos
-            enemy.home_x = x_pos
-            enemy.aggro_range = 1000
-            enemy.attack_range = 400
-            enemy.patrol_range = 50
-            enemy.hp = int(getattr(enemy, "hp", 100) * 2.5)
-            if hasattr(enemy, "damage"):
-                try:
-                    enemy.damage = int(enemy.damage * 1.8)
-                except Exception:
-                    enemy.damage = getattr(enemy, "damage", 40)
-
-            enemy.damaged = False
-
-            self.mid_enemies.append(enemy)
-            self.mid_spawned = True
-            print(f"[DEBUG] Spawned 1 big bright mid enemy at x={x_pos}, y={getattr(enemy,'y',None)}")
-
-        except Exception as e:
-            print(f"[ERROR] spawn_mid_enemies failed: {e}")
-            traceback.print_exc()
+            if event.key == pygame.K_ESCAPE:
+                self.game.change_scene("menu")
+                
+        # Universal skill handling
+        if self.handle_universal_skill_input(event):
+            return  # Skill was handled
     
     def activate_skill(self):
         """Kích hoạt skill video cho Chiến Thần Lạc Hồng"""
@@ -441,16 +336,34 @@ class MapCongNgheScene:
                 if self.current_boss.hp <= 0:
                     if hasattr(self.player, 'score'):
                         self.player.score += self.current_boss.score_value
-                    if hasattr(self, 'spawn_next_boss'):
+                    if hasattr(self, 'spawn_next_boss') and not hasattr(self, 'victory_triggered'):
                         self.spawn_next_boss()
         
         print(f"[SKILL] Damaged {damage_count} enemies!")
+        
+    def spawn_next_boss(self):
+        """Spawn boss tiếp theo"""
+        if hasattr(self, 'current_boss_index') and hasattr(self, 'bosses'):
+            if self.current_boss_index < len(self.bosses):
+                self.current_boss = self.bosses[self.current_boss_index]
+                self.current_boss_index += 1
+                print(f"[BOSS] Spawned boss {self.current_boss_index}")
+            else:
+                self.current_boss = None
+                print("[BOSS] All bosses defeated")
+                # Check if all enemies are defeated to change scene
+                if not self.normal_enemies and not hasattr(self, 'victory_triggered'):
+                    print("[VICTORY] All enemies defeated!")
+                    self.victory_triggered = True
+                    self.game.change_scene("victory")
+        else:
+            print("[ERROR] Boss system not properly initialized")
 
     def update(self):
         # Update skill video if showing
-        if self.showing_skill_video and self.skill_video:
-            self.skill_video.update()
-            return  # Pause game logic while showing skill video
+        # Universal skill system update
+        if self.update_universal_skills():
+            return  # Pause game if skill video is playing  # Pause game logic while showing skill video
         
         if not getattr(self, "initialized", True):
             return
@@ -513,7 +426,7 @@ class MapCongNgheScene:
             self.normal_enemies = alive_enemies
 
             # Spawn boss when normal enemies cleared
-            if not self.normal_enemies:
+            if not self.normal_enemies and not hasattr(self, 'victory_triggered'):
                 if not self.current_boss or getattr(self.current_boss, "dead", False):
                     self.spawn_next_boss()
 
@@ -691,6 +604,15 @@ class MapCongNgheScene:
             beam_surface.fill((*beam['color'], beam['current_alpha']))
             screen.blit(beam_surface, (x, beam['y']))
 
+    def get_all_enemies(self):
+        """Lấy tất cả enemies để truyền cho skill system"""
+        all_enemies = []
+        if hasattr(self, 'normal_enemies'):
+            all_enemies.extend(self.normal_enemies)
+        if hasattr(self, 'current_boss') and self.current_boss:
+            all_enemies.append(self.current_boss)
+        return all_enemies
+
     def draw(self, screen):
         # If showing skill video, render it first
         if self.showing_skill_video and self.skill_video:
@@ -794,7 +716,7 @@ class MapCongNgheScene:
             self.action_buttons.draw(screen, player=self.player)
             # Draw skill UI if player is Chiến Thần Lạc Hồng
             if "chien_than_lac_hong" in self.player.folder:
-                self.draw_skill_ui(screen)
+                self.draw_universal_skill_ui(screen)
         except Exception:
             pass
 
