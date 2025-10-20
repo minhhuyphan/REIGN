@@ -9,9 +9,10 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
+from ma_nguon.tien_ich import bullet_handler
+from ma_nguon.tien_ich.equipment_loader import load_and_apply_equipment
 
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
-from ma_nguon.tien_ich import bullet_handler
 
 
 class MapCongNgheScene:
@@ -84,6 +85,9 @@ class MapCongNgheScene:
                 # Cập nhật damage cho môi trường công nghệ
                 self.player.damage = 18
                 self.player.kick_damage = 23
+                
+                # Load và apply equipment stats
+                load_and_apply_equipment(self.player, self.game, "MAP_CONG_NGHE")
             except Exception as e:
                 tb = traceback.format_exc()
                 print("[ERROR] Player init failed:", e)

@@ -6,6 +6,7 @@ from ma_nguon.doi_tuong.character_stats import CHARACTER_STATS
 
 class CharacterSelectScene:
     def __init__(self, game):
+        print("[CHON_NV] Khởi tạo màn chọn nhân vật...")
         self.game = game
         self.screen_width = self.game.screen.get_width()
         self.screen_height = self.game.screen.get_height()
@@ -43,6 +44,25 @@ class CharacterSelectScene:
         self.dragging = False
         self.drag_start_x = 0
         self.scroll_start = 0
+        
+        # Load equipment inventory ngay khi khởi tạo để hiển thị bonuses
+        self._preload_equipment_inventory()
+    
+    def _preload_equipment_inventory(self):
+        """Load equipment inventory vào EquipmentManager để hiển thị bonuses"""
+        try:
+            if hasattr(self.game, 'current_user') and self.game.current_user:
+                from ma_nguon.doi_tuong.equipment import get_equipment_manager
+                
+                profile = profile_manager.load_profile(self.game.current_user)
+                inventory = profile.get('equipment_inventory', {})
+                
+                if inventory:
+                    eq_manager = get_equipment_manager()
+                    eq_manager.load_inventory_from_profile(inventory)
+                    print(f"[CHON_NV] Preloaded {len(inventory)} equipment types for display")
+        except Exception as e:
+            print(f"[CHON_NV] Could not preload equipment: {e}")
         
     def _load_preview(self, path):
         try:
@@ -101,6 +121,7 @@ class CharacterSelectScene:
             self.scroll_x = max(0, self.scroll_start - dx)
     
     def _create_player(self):
+        print("[CHON_NV] _create_player được gọi")
         selected = self.characters[self.selected_idx]
         # Không truyền controls để Character tự lấy từ settings
         
@@ -133,8 +154,16 @@ class CharacterSelectScene:
                 character_equipment = profile.get('character_equipment', {})
                 char_id = selected["id"]
                 
+                # Load equipment manager
+                eq_manager = get_equipment_manager()
+                
+                # Load inventory từ profile (QUAN TRỌNG: Phải load inventory trước)
+                inventory = profile.get('equipment_inventory', {})
+                if inventory:
+                    eq_manager.load_inventory_from_profile(inventory)
+                    print(f"[CHON_NV] Đã load {len(inventory)} loại trang bị vào inventory")
+                
                 if char_id in character_equipment:
-                    eq_manager = get_equipment_manager()
                     # Load equipment data vào manager
                     eq_manager.load_character_equipment(char_id, character_equipment[char_id])
                     
@@ -150,6 +179,9 @@ class CharacterSelectScene:
                     print(f"Sau khi lắp trang bị - HP: {player.hp}/{player.max_hp}, Damage: {player.damage}, Speed: {player.speed}")
                     print(f"{'='*60}\n")
                     print(f"✓ Đã áp dụng trang bị cho {selected['name']}")
+                    
+                    # Đánh dấu đã apply equipment để tránh apply lại trong map
+                    player._equipment_applied = True
                 else:
                     print(f"Không có trang bị cho {char_id}")
                     print(f"{'='*60}\n")

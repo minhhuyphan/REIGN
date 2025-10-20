@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import os
 from ma_nguon.core import profile_manager
 from ma_nguon.doi_tuong.items import EQUIPMENT_DATA
 
@@ -126,31 +127,41 @@ class GachaTrangBiScene:
             return
         
         profile = profile_manager.load_profile(user)
-        inventory = profile.get('equipment_inventory', [])
         
-        # Add result items to inventory
+        # Lấy inventory hiện tại - dạng dict với {item_id: count}
+        inventory = profile.get('equipment_inventory', {})
+        
+        # Nếu inventory là list cũ, convert sang dict
+        if isinstance(inventory, list):
+            new_inventory = {}
+            for item in inventory:
+                new_inventory[item] = new_inventory.get(item, 0) + 1
+            inventory = new_inventory
+        
+        # Add result items to inventory (có thể trùng lặp)
         for item_id in self.result_items:
-            if item_id not in inventory:
-                inventory.append(item_id)
+            inventory[item_id] = inventory.get(item_id, 0) + 1
         
         profile['equipment_inventory'] = inventory
         profile_manager.save_profile(user, profile)
         self.game.profile = profile
+        
+        print(f"[GACHA] Added {len(self.result_items)} items to inventory: {self.result_items}")
+        print(f"[GACHA] Current inventory: {inventory}")
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if self.show_result:
-                    # Close result and go back
+                    # Close result and go back to menu
                     self.show_result = False
-                    self.game.change_scene("shop")
                 elif not self.spinning:
                     # Go back to shop
                     self.game.change_scene("shop")
             
             elif event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
                 if self.show_result:
-                    # Close result
+                    # Close result and back to gacha menu
                     self.show_result = False
                 elif not self.spinning:
                     # Start spin (1 roll)
@@ -163,12 +174,24 @@ class GachaTrangBiScene:
             elif event.key == pygame.K_0:
                 if not self.spinning and not self.show_result:
                     self._start_spin(10)
+            
+            elif event.key == pygame.K_n:
+                # N = Next roll (quay tiếp 1 lần)
+                if self.show_result:
+                    self.show_result = False
+                    self._start_spin(1)
+            
+            elif event.key == pygame.K_m:
+                # M = Multiple rolls (quay tiếp 10 lần)
+                if self.show_result:
+                    self.show_result = False
+                    self._start_spin(10)
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_pos = event.pos
                 
-                # Check buttons
+                # Check buttons in main menu
                 if hasattr(self, 'btn_1_rect') and self.btn_1_rect.collidepoint(mouse_pos):
                     if not self.spinning and not self.show_result:
                         self._start_spin(1)
@@ -180,6 +203,22 @@ class GachaTrangBiScene:
                 elif hasattr(self, 'btn_back_rect') and self.btn_back_rect.collidepoint(mouse_pos):
                     if not self.spinning:
                         self.game.change_scene("shop")
+                
+                # Check buttons in result screen
+                if self.show_result:
+                    if hasattr(self, 'btn_roll_again_rect') and self.btn_roll_again_rect.collidepoint(mouse_pos):
+                        # Quay tiếp 1 lần
+                        self.show_result = False
+                        self._start_spin(1)
+                    
+                    elif hasattr(self, 'btn_roll_10_again_rect') and self.btn_roll_10_again_rect.collidepoint(mouse_pos):
+                        # Quay tiếp 10 lần
+                        self.show_result = False
+                        self._start_spin(10)
+                    
+                    elif hasattr(self, 'btn_back_menu_rect') and self.btn_back_menu_rect.collidepoint(mouse_pos):
+                        # Quay về menu gacha
+                        self.show_result = False
     
     def _create_gradient_background(self):
         """Tạo gradient background một lần để tối ưu performance"""
@@ -377,10 +416,10 @@ class GachaTrangBiScene:
         rows = (num_items + items_per_row - 1) // items_per_row
         
         card_width = 150
-        card_height = 200
+        card_height = 220
         gap = 20
         
-        start_y = 150
+        start_y = 130
         
         for idx, item_id in enumerate(self.result_items):
             row = idx // items_per_row
@@ -398,6 +437,8 @@ class GachaTrangBiScene:
             item_data = EQUIPMENT_DATA.get(item_id, {})
             rarity = item_data.get("rarity", "common")
             name = item_data.get("name", item_id)
+            image_path = item_data.get("image_path", "")
+            equip_type = item_data.get("type", "")
             
             # Card background
             card_rect = pygame.Rect(x, y, card_width, card_height)
@@ -416,22 +457,115 @@ class GachaTrangBiScene:
             pygame.draw.rect(screen, (40, 40, 60), card_rect, border_radius=10)
             pygame.draw.rect(screen, rarity_color, card_rect, 3, border_radius=10)
             
+            # Draw equipment image
+            if image_path:
+                # Build full path
+                full_path = os.path.join("tai_nguyen", "hinh_anh", "trang_bi", image_path)
+                if not os.path.exists(full_path):
+                    # Try uppercase variant
+                    full_path = os.path.join("Tai_nguyen", "hinh_anh", "trang_bi", image_path)
+                
+                if os.path.exists(full_path):
+                    try:
+                        equip_img = pygame.image.load(full_path).convert_alpha()
+                        # Scale image to fit card
+                        img_size = 80
+                        equip_img = pygame.transform.scale(equip_img, (img_size, img_size))
+                        img_x = x + (card_width - img_size) // 2
+                        img_y = y + 30
+                        screen.blit(equip_img, (img_x, img_y))
+                        print(f"[GACHA] Loaded image: {full_path}")
+                    except Exception as e:
+                        print(f"[GACHA] Failed to load image {full_path}: {e}")
+                        # If image fails, draw placeholder
+                        pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
+                else:
+                    print(f"[GACHA] Image not found: {full_path}")
+                    # Placeholder icon
+                    pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
+            else:
+                # Placeholder icon
+                pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
+            
             # Item name (wrapped)
             name_lines = self._wrap_text(name, self.font_small, card_width - 20)
-            name_y = y + 20
+            name_y = y + 125
             for line in name_lines:
                 line_surf = self.font_small.render(line, True, rarity_color)
                 screen.blit(line_surf, (x + card_width//2 - line_surf.get_width()//2, name_y))
-                name_y += 25
+                name_y += 22
             
-            # Rarity
+            # Stats
+            stats_y = y + card_height - 50
+            stats_font = pygame.font.Font(None, 18)
+            
+            attack_bonus = item_data.get("attack_bonus", 0)
+            hp_bonus = item_data.get("hp_bonus", 0)
+            speed_bonus = item_data.get("speed_bonus", 0)
+            
+            if attack_bonus > 0:
+                stat_text = stats_font.render(f"+{attack_bonus} ATK", True, (255, 200, 100))
+                screen.blit(stat_text, (x + 10, stats_y))
+            elif hp_bonus > 0:
+                stat_text = stats_font.render(f"+{hp_bonus} HP", True, (100, 255, 100))
+                screen.blit(stat_text, (x + 10, stats_y))
+            elif speed_bonus > 0:
+                stat_text = stats_font.render(f"+{speed_bonus} SPD", True, (100, 200, 255))
+                screen.blit(stat_text, (x + 10, stats_y))
+            
+            # Rarity badge
             rarity_text = self.font_small.render(rarity.upper(), True, rarity_color)
-            screen.blit(rarity_text, (x + card_width//2 - rarity_text.get_width()//2, y + card_height - 30))
+            screen.blit(rarity_text, (x + card_width//2 - rarity_text.get_width()//2, y + 10))
         
-        # Continue instruction
-        continue_text = self.font_small.render("Nhấn SPACE hoặc ESC để tiếp tục", True, (200, 200, 200))
+        # Buttons at bottom
+        btn_width = 200
+        btn_height = 60
+        btn_gap = 20
+        btn_y = self.screen_height - 120
+        
+        # Calculate center position for 3 buttons
+        total_width = btn_width * 3 + btn_gap * 2
+        start_x = (self.screen_width - total_width) // 2
+        
+        mouse_pos = pygame.mouse.get_pos()
+        
+        # Button "Quay tiếp 1" (Roll Again x1)
+        self.btn_roll_again_rect = pygame.Rect(start_x, btn_y, btn_width, btn_height)
+        hover_color_1 = (80, 100, 150) if self.btn_roll_again_rect.collidepoint(mouse_pos) else (60, 80, 130)
+        
+        pygame.draw.rect(screen, hover_color_1, self.btn_roll_again_rect, border_radius=10)
+        pygame.draw.rect(screen, (100, 200, 255), self.btn_roll_again_rect, 3, border_radius=10)
+        
+        roll_text = self.font_medium.render("Quay x1 (N)", True, (255, 255, 255))
+        screen.blit(roll_text, (self.btn_roll_again_rect.centerx - roll_text.get_width()//2,
+                                self.btn_roll_again_rect.centery - roll_text.get_height()//2))
+        
+        # Button "Quay tiếp 10" (Roll Again x10)
+        self.btn_roll_10_again_rect = pygame.Rect(start_x + btn_width + btn_gap, btn_y, btn_width, btn_height)
+        hover_color_2 = (120, 80, 150) if self.btn_roll_10_again_rect.collidepoint(mouse_pos) else (100, 60, 130)
+        
+        pygame.draw.rect(screen, hover_color_2, self.btn_roll_10_again_rect, border_radius=10)
+        pygame.draw.rect(screen, (200, 100, 255), self.btn_roll_10_again_rect, 3, border_radius=10)
+        
+        roll10_text = self.font_medium.render("Quay x10 (M)", True, (255, 255, 255))
+        screen.blit(roll10_text, (self.btn_roll_10_again_rect.centerx - roll10_text.get_width()//2,
+                                  self.btn_roll_10_again_rect.centery - roll10_text.get_height()//2))
+        
+        # Button "Quay về" (Back to Menu)
+        self.btn_back_menu_rect = pygame.Rect(start_x + (btn_width + btn_gap) * 2, btn_y, btn_width, btn_height)
+        hover_color_3 = (100, 70, 70) if self.btn_back_menu_rect.collidepoint(mouse_pos) else (80, 50, 50)
+        
+        pygame.draw.rect(screen, hover_color_3, self.btn_back_menu_rect, border_radius=10)
+        pygame.draw.rect(screen, (200, 150, 150), self.btn_back_menu_rect, 3, border_radius=10)
+        
+        back_text = self.font_medium.render("Quay về (ESC)", True, (255, 255, 255))
+        screen.blit(back_text, (self.btn_back_menu_rect.centerx - back_text.get_width()//2,
+                               self.btn_back_menu_rect.centery - back_text.get_height()//2))
+        
+        # Instructions (moved up a bit)
+        continue_text = self.font_small.render("N = Quay x1 | M = Quay x10 | SPACE/ESC = Quay về", True, (200, 200, 200))
         screen.blit(continue_text, (self.screen_width//2 - continue_text.get_width()//2, 
-                                    self.screen_height - 40))
+                                    self.screen_height - 50))
     
     def _wrap_text(self, text, font, max_width):
         """Chia text thành nhiều dòng"""
