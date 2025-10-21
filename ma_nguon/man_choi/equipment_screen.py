@@ -50,6 +50,13 @@ class EquipmentScreen:
         self.ACCENT_COLOR = (100, 200, 255)
         self.CARD_BG = (30, 30, 60)
         self.CARD_SELECTED = (70, 100, 150)
+        # Rarity border colors
+        self.RARITY_COLORS = {
+            'common': (180, 180, 180),
+            'rare': (80, 160, 220),
+            'epic': (170, 100, 200),
+            'legendary': (220, 180, 60),
+        }
         
         # Font
         try:
@@ -544,7 +551,14 @@ class EquipmentScreen:
             # Draw slot with rounded corners
             slot_rect = pygame.Rect(slot_x, slot_y, self.SLOT_SIZE, self.SLOT_SIZE)
             pygame.draw.rect(screen, color, slot_rect, border_radius=8)
-            pygame.draw.rect(screen, self.TEXT_COLOR, slot_rect, border_width, border_radius=8)
+
+            # Determine border color by rarity (if available)
+            rarity = getattr(equipment, 'rarity', None)
+            border_color = self.TEXT_COLOR
+            if rarity and rarity in self.RARITY_COLORS:
+                border_color = self.RARITY_COLORS[rarity]
+
+            pygame.draw.rect(screen, border_color, slot_rect, border_width, border_radius=8)
             
             # Draw equipment image
             if equipment.image:
