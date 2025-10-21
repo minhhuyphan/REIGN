@@ -14,7 +14,7 @@ class Bullet:
         
         # Load hình ảnh đạn từ folder chieu của tho_san_quai_vat
         try:
-            bullet_path = os.path.join("Tai_nguyen", "hinh_anh", "nhan_vat", "tho_san_quai_vat", "chieu", "dan.png")
+            bullet_path = os.path.join("tai_nguyen", "hinh_anh", "nhan_vat", "tho_san_quai_vat", "chieu", "dan.png")
             self.image = pygame.image.load(bullet_path).convert_alpha()
             self.image = pygame.transform.scale(self.image, (30, 15))  # Scale đạn cho phù hợp
         except Exception as e:

@@ -81,6 +81,24 @@
     }
   },
   "phuc11": {
+    "gold": 386,
+    "character_equipment": {},
+    "purchased_characters": [
+      "chien_binh",
+      "tho_san_quai_vat"
+    ],
+    "equipment_inventory": {
+      "Cung Băng Lãm": 1,
+      "Giày Da": 5,
+      "Giay Da Boc Sat": 2,
+      "Giap Sat Bi Ri": 6,
+      "Giáp Sắt": 3,
+      "Cung Gỗ": 5,
+      "Kiếm Gỗ": 5,
+      "Kiếm Sắt": 2,
+      "Giáp Ánh Sáng": 1,
+      "Giay Phu Phep": 1,
+      "Ao Troang Bong Dem": 1
     "gold": 55555555555534849,
     "character_equipment": {
       "chien_binh": {
