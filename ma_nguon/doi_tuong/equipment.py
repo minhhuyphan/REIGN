@@ -152,7 +152,9 @@ class EquipmentManager:
         
         print(f"[EQUIPMENT] Creating {item_name} with image_path: {image_path}")
         eq = Equipment(item_name, eq_type, image_path)
-        
+        # Preserve rarity for UI coloring and other logic
+        eq.rarity = item_data.get("rarity", "common")
+
         # Set stats
         eq.attack_bonus = item_data.get("attack_bonus", 0)
         eq.hp_bonus = item_data.get("hp_bonus", 0)
