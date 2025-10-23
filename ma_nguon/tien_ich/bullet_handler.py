@@ -44,5 +44,6 @@ def draw_bullets(player, screen, camera_x=0):
         screen: Surface để vẽ
         camera_x: Camera offset
     """
-    for bullet in player.bullets:
-        bullet.draw(screen, camera_x)
+    if hasattr(player, 'bullets') and player.bullets:
+        for bullet in player.bullets:
+            bullet.draw(screen, camera_x)

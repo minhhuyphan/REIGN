@@ -159,6 +159,20 @@ class LoadingScene:
             from ma_nguon.man_choi.map_ninja_man1 import mapninjaman1Scene
             self.game.current_scene = mapninjaman1Scene(self.game, player=self.game.selected_player)
 
+        elif self.target_scene == "map_ninja_man2":
+            # New ninja map 2 scene
+            try:
+                from ma_nguon.man_choi.map_ninja_man2 import mapninjaman2Scene
+                self.game.current_scene = mapninjaman2Scene(self.game, player=self.game.selected_player)
+            except Exception as e:
+                print(f"✗ Lỗi khi tạo map_ninja_man2: {e}")
+                # Fallback to map 1 if creation fails
+                try:
+                    from ma_nguon.man_choi.map_ninja_man1 import mapninjaman1Scene
+                    self.game.current_scene = mapninjaman1Scene(self.game, player=self.game.selected_player)
+                except Exception:
+                    self.game.current_scene = None
+
         elif self.target_scene == "autumn_levels_ninja":
             from ma_nguon.man_choi.chon_man_ninja import AutumnLevelsSceneninja
             self.game.current_scene = AutumnLevelsSceneninja(self.game)
