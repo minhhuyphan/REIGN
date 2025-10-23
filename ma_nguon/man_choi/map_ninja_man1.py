@@ -8,11 +8,11 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
-from ma_nguon.tien_ich import bullet_handler
-from ma_nguon.tien_ich.equipment_loader import load_and_apply_equipment
 
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
+
 from ma_nguon.man_choi.base_map_scene import BaseMapScene
+from ma_nguon.tien_ich import bullet_handler
 
 
 
@@ -73,7 +73,7 @@ class mapninjaman1Scene(BaseMapScene):
             self.player.hp = max_hp_with_equipment
         else:
             # Code tạo player mới
-            folder_nv = os.path.join("Tai_nguyen", "hinh_anh", "nhan_vat", "ninja")
+            folder_nv = os.path.join("Tai_nguyen", "hinh_anh", "nhan_vat",)
             controls_p1 = {
                 "left": pygame.K_LEFT,
                 "right": pygame.K_RIGHT,
@@ -87,12 +87,41 @@ class mapninjaman1Scene(BaseMapScene):
         # Cập nhật các thuộc tính cho nhân vật
         self.player.damage = 15       # Damage đấm
         self.player.kick_damage = 20  # Damage đá
+
+        # Setup ground baseline like map ninja man 2
+        self.enemy_vertical_offset = 0  # Fine-tune vertical alignment
         
-        # Load và apply equipment stats
-        load_and_apply_equipment(self.player, self.game, "MAP_NINJA_1")
+        # Helper function for finding bottom visible row (copied from map ninja man 2)
+        def _bottom_visible_row(surf):
+            try:
+                w, h = surf.get_size()
+            except Exception:
+                return None
+            for row in range(h - 1, -1, -1):
+                for x in range(w):
+                    try:
+                        if surf.get_at((x, row))[3] != 0:
+                            return row
+                    except Exception:
+                        continue
+            return None
+        
+        self._bottom_visible_row = _bottom_visible_row
+        
+        # Compute ground_y baseline from player (like map ninja man 2)
+        try:
+            p_vis = self._bottom_visible_row(self.player.image)
+            if p_vis is None:
+                p_vis = self.player.image.get_height() - 1
+            self.ground_y = self.player.y + p_vis
+            self.player.y = self.ground_y - p_vis
+            self.player.base_y = self.player.y
+        except Exception:
+            # Fallback to previous baseline
+            self.ground_y = self.player.base_y + (self.player.image.get_height() if getattr(self.player, 'image', None) else 150)
     
         # MÀNT 1: ÍT QUÁI - DỄ NHẤT
-        folder_qv = os.path.join("Tai_nguyen", "hinh_anh","quai_vat", "quai_vat_ninja")
+        folder_qv = os.path.join("Tai_nguyen", "hinh_anh","quai_vat", "quai_vat_ninja","quai_thuong")
         sound_qv = os.path.join("Tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []
@@ -112,6 +141,23 @@ class mapninjaman1Scene(BaseMapScene):
             for i in range(num_enemies):
                 x_pos = group_x + random.randint(-100, 100)
                 enemy = QuaiVat(x_pos, 300, folder_qv, sound_qv, color=(255, 200, 100), damage=8)  # Damage thấp
+                # Align enemy vertical position to player's baseline
+                try:
+                    # visible bottom alignment similar to map_ninja_man2
+                    pb = self._bottom_visible_row(self.player.image) if getattr(self.player, 'image', None) else None
+                    eb = self._bottom_visible_row(enemy.image) if getattr(enemy, 'image', None) else None
+                    player_h = self.player.image.get_height() if getattr(self.player, 'image', None) else 150
+                    enemy_h = enemy.image.get_height() if getattr(enemy, 'image', None) else enemy.target_size[1]
+                    player_bottom_row = pb if pb is not None else player_h - 1
+                    enemy_bottom_row = eb if eb is not None else enemy_h - 1
+                    player_visible_h = (player_h - player_bottom_row)
+                    enemy_visible_h = (enemy_h - enemy_bottom_row)
+                    player_bottom = self.player.y + (player_h - player_visible_h)
+                    enemy.y = player_bottom - (enemy_h - enemy_visible_h) + self.enemy_vertical_offset
+                    enemy.base_y = enemy.y
+                except Exception:
+                    enemy.y = 300
+                    enemy.base_y = enemy.y
                 # Thiết lập vùng hoạt động nhỏ - ít tấn công
                 enemy.speed = 2
                 enemy.home_x = x_pos
@@ -119,6 +165,33 @@ class mapninjaman1Scene(BaseMapScene):
                 enemy.aggro_range = 250
                 enemy.hp = int(enemy.hp * 0.8)  # 20% ít máu hơn
                 self.normal_enemies.append(enemy)
+
+        # --- Thêm vài quái nhỏ trải đều đường (extra small enemies) ---
+        # Tạo thêm một số quái nhỏ để trải đều map, giúp game không bị trống giữa các nhóm
+        extra_count = 6
+        start_x = 400
+        end_x = max(800, self.game.map_width - 400)
+        for i in range(extra_count):
+            x_pos = int(start_x + (i * (end_x - start_x) / max(1, extra_count - 1)))
+            x_pos = int(x_pos + random.randint(-50, 50))
+            small_enemy = QuaiVat(x_pos, 300, folder_qv, sound_qv, color=(220, 180, 140), damage=6)
+            try:
+                # Align enemy to ground_y like map ninja man 2
+                e_vis = self._bottom_visible_row(small_enemy.image) if getattr(small_enemy, 'image', None) else None
+                if e_vis is None:
+                    e_vis = (small_enemy.image.get_height() if getattr(small_enemy, 'image', None) else getattr(small_enemy, 'target_size', [150,150])[1]) - 1
+                small_enemy.y = self.ground_y - e_vis + self.enemy_vertical_offset
+                small_enemy.base_y = small_enemy.y
+            except Exception:
+                small_enemy.y = 300
+                small_enemy.base_y = 300
+            small_enemy.speed = 1.8
+            small_enemy.home_x = x_pos
+            small_enemy.patrol_range = 120
+            small_enemy.aggro_range = 220
+            small_enemy.hp = int(small_enemy.hp * 0.75)
+            self.normal_enemies.append(small_enemy)
+            total_enemies += 1
 
         # Chỉ có 1 boss dễ
         self.bosses = [
@@ -130,6 +203,16 @@ class mapninjaman1Scene(BaseMapScene):
             boss.hp = int(boss.hp * 0.7)  # 30% ít máu hơn
             boss.damage = int(boss.damage * 0.8)  # 20% ít sát thương hơn
             boss.speed = boss.speed * 0.9  # Chậm hơn 10%
+            
+            # Align boss to ground_y like map ninja man 2
+            try:
+                b_vis = self._bottom_visible_row(boss.image) if getattr(boss, 'image', None) else None
+                if b_vis is None:
+                    b_vis = (boss.image.get_height() if getattr(boss, 'image', None) else getattr(boss, 'target_size', [150,150])[1]) - 1
+                boss.y = self.ground_y - b_vis + self.enemy_vertical_offset
+                boss.base_y = boss.y
+            except Exception:
+                pass
             
         self.current_boss_index = 0
         self.current_boss = None
@@ -147,6 +230,24 @@ class mapninjaman1Scene(BaseMapScene):
         
         # Hiệu ứng lá rơi mùa thu nhẹ nhàng (ít hơn)
         self.falling_leaves = []
+        # Fine-tune vertical alignment for enemies in this map
+        self.enemy_vertical_offset = 40
+        # Helper: find bottommost non-transparent pixel row index in a Surface
+        def _bottom_visible_row(surf):
+            try:
+                w, h = surf.get_size()
+            except Exception:
+                return None
+            for row in range(h - 1, -1, -1):
+                for x in range(w):
+                    try:
+                        if surf.get_at((x, row))[3] != 0:
+                            return row
+                    except Exception:
+                        continue
+            return None
+
+        self._bottom_visible_row = _bottom_visible_row
         leaf_colors = [
             (255, 215, 0),   # Vàng gold
             (255, 140, 0),   # Cam đậm
@@ -173,19 +274,114 @@ class mapninjaman1Scene(BaseMapScene):
         # Let UI handle clicks first
         if self.action_buttons.handle_event(event, player=self.player):
             return
+
+        # Universal skill handling (calls player.handle_skill_input and activation)
+        try:
+            if hasattr(self, 'handle_universal_skill_input') and self.handle_universal_skill_input(event):
+                return
+        except Exception:
+            pass
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
+                        # Skill activation - F key (chỉ cho Chiến Thần Lạc Hồng)
+            if event.key == pygame.K_f and "chien_than_lac_hong" in self.player.folder:
+                self.activate_skill()
+            elif event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
-                
-        # Universal skill handling
-        if self.handle_universal_skill_input(event):
-            return  # Skill was handled
+
+
+    def spawn_next_boss(self):
+        if self.current_boss_index < len(self.bosses):
+            self.current_boss = self.bosses[self.current_boss_index]
+            self.current_boss_index += 1
+            # Try to spawn boss in the middle of the large enemy cluster if available
+            try:
+                if self.normal_enemies:
+                    avg_x = int(sum(getattr(e, 'x', 0) for e in self.normal_enemies) / max(1, len(self.normal_enemies)))
+                    self.current_boss.x = avg_x
+                else:
+                    # center of current camera view
+                    self.current_boss.x = int(self.camera_x + self.game.WIDTH // 2)
+
+                # Align boss vertically like in map ninja man 2 - use ground_y
+                try:
+                    b_vis = self._bottom_visible_row(self.current_boss.image) if getattr(self.current_boss, 'image', None) else None
+                    if b_vis is None:
+                        b_vis = (self.current_boss.image.get_height() if getattr(self.current_boss, 'image', None) else getattr(self.current_boss, 'target_size', [150,150])[1]) - 1
+                    # Use ground_y like map ninja man 2 to keep boss at proper height
+                    self.current_boss.y = self.ground_y - b_vis + getattr(self, 'enemy_vertical_offset', 0)
+                    self.current_boss.base_y = self.current_boss.y
+                except Exception:
+                    pass
+            except Exception:
+                pass
+        else:
+            self.current_boss = None
+            # Kiểm tra xem đã tiêu diệt tất cả kẻ địch chưa
+            if not self.normal_enemies:
+                self.all_enemies_defeated = True
+                # Chuyển sang màn 2 ninja
+                try:
+                    print(f"[DEBUG] spawn_next_boss: all_enemies={len(self.normal_enemies)}, current_boss={self.current_boss}")
+                    # Pass the player through game.selected_player so LoadingScene will forward it
+                    self.game.selected_player = self.player
+                    self.game.change_scene("map_ninja_man2")
+                except Exception as e:
+                    print(f"[ERROR] Failed to change scene to map_ninja_man2: {e}")
+
+    
+    def activate_skill(self):
+        """Kích hoạt skill video cho Chiến Thần Lạc Hồng"""
+        if self.player.can_use_skill():
+            # Tạo video player với callback
+            video_path = "Tai_nguyen/video/skill_chien_than.mp4"
+            self.skill_video = SkillVideoPlayer(video_path, self.on_skill_finish)
+            self.showing_skill_video = True
+            
+            # Sử dụng skill (trừ mana, reset cooldown)
+            self.player.use_skill()
+            print("[SKILL] Chiến Thần Lạc Hồng activated skill!")
+    
+    def on_skill_finish(self):
+        """Callback khi skill video kết thúc"""
+        print("[SKILL] Video finished, dealing damage to enemies...")
+        self.damage_nearby_enemies()
+        self.showing_skill_video = False
+        self.skill_video = None
+    
+    def damage_nearby_enemies(self):
+        """Gây damage cho tất cả quái vật trong phạm vi skill"""
+        damage_count = 0
+        
+        # Damage normal enemies
+        for enemy in self.normal_enemies[:]:
+            distance = abs(enemy.x - self.player.x)
+            if distance <= self.player.skill_range:
+                enemy.hp -= self.player.skill_damage
+                damage_count += 1
+                if enemy.hp <= 0:
+                    self.normal_enemies.remove(enemy)
+                    if hasattr(self.player, 'score'):
+                        self.player.score += enemy.score_value
+        
+        # Damage current boss if exists
+        if hasattr(self, 'current_boss') and self.current_boss:
+            distance = abs(self.current_boss.x - self.player.x)
+            if distance <= self.player.skill_range:
+                self.current_boss.hp -= self.player.skill_damage
+                damage_count += 1
+                if self.current_boss.hp <= 0:
+                    if hasattr(self.player, 'score'):
+                        self.player.score += self.current_boss.score_value
+                    if hasattr(self, 'spawn_next_boss'):
+                        self.spawn_next_boss()
+        
+        print(f"[SKILL] Damaged {damage_count} enemies!")
 
     def update(self):
         # Update skill video if showing
-        # Universal skill system update
-        if self.update_universal_skills():
-            return  # Pause game if skill video is playing  # Pause game logic while showing skill video
+        if self.showing_skill_video and self.skill_video:
+            self.skill_video.update()
+            return  # Pause game logic while showing skill video
         
         keys = pygame.key.get_pressed()
 
@@ -244,6 +440,22 @@ class mapninjaman1Scene(BaseMapScene):
             if not self.normal_enemies:
                 if not self.current_boss or self.current_boss.dead:
                     self.spawn_next_boss()
+
+            # Nếu đã không còn quái và boss cũng đã chết -> chuyển sang màn 2
+            # Đây là bổ sung để đảm bảo chuyển tiếp trực tiếp từ Màn 1 -> Màn 2
+            if not self.normal_enemies and (not self.current_boss or getattr(self.current_boss, 'dead', False)):
+                if not getattr(self, 'transitioned_to_next', False):
+                    self.transitioned_to_next = True
+                    # Chuyển sang màn 2 và giữ trạng thái player
+                    try:
+                        print(f"[DEBUG] update: triggering transition to map_ninja_man2 (normal_enemies={len(self.normal_enemies)}, current_boss={self.current_boss})")
+                        self.game.selected_player = self.player
+                        self.game.change_scene("map_ninja_man2")
+                        return
+                    except Exception:
+                        # Nếu có lỗi khi chuyển, fallback sang victory để không block game
+                        self.game.change_scene("victory")
+                        return
 
             # Boss update
             if self.current_boss and not self.current_boss.dead:
@@ -326,9 +538,29 @@ class mapninjaman1Scene(BaseMapScene):
                                     boss_damage = self.current_boss.get_current_damage()
                                 self.player.take_damage(boss_damage, self.current_boss.flip)
                                 self.player.damaged = True
-            # Cập nhật đạn (bullet)
+            # Cập nhật đạn (bullet) và Sasuke skill system
             from ma_nguon.tien_ich import bullet_handler
+            
+            # Theo dõi bullets trước khi update để bắt hits
+            old_bullets = [b for b in getattr(self.player, 'bullets', [])]
+            
             bullet_handler.update_bullets(self.player, self.normal_enemies, self.current_boss)
+            
+            # Kiểm tra Sasuke skill bullets bị mất (trúng mục tiêu)
+            new_bullets = [b for b in getattr(self.player, 'bullets', [])]
+            for old_bullet in old_bullets:
+                if hasattr(old_bullet, 'is_sasuke_skill') and old_bullet.is_sasuke_skill:
+                    if old_bullet not in new_bullets and not getattr(old_bullet, 'active', True):
+                        # Bullet đã trúng mục tiêu - spawn Iori assist
+                        if hasattr(self, 'sasuke_skill_manager'):
+                            self.sasuke_skill_manager.on_projectile_hit(
+                                old_bullet.x, old_bullet.y, 
+                                damage=150
+                            )
+            
+            # Cập nhật Sasuke skill manager
+            if hasattr(self, 'sasuke_skill_manager'):
+                self.sasuke_skill_manager.update(self.normal_enemies, self.current_boss)
         else:
             # Player chết - chuyển đến màn hình Game Over
             if not hasattr(self, 'death_timer'):
@@ -378,15 +610,6 @@ class mapninjaman1Scene(BaseMapScene):
             screen.blit(rotated_leaf, rect)
 
 
-    def get_all_enemies(self):
-        """Lấy tất cả enemies để truyền cho skill system"""
-        all_enemies = []
-        if hasattr(self, 'normal_enemies'):
-            all_enemies.extend(self.normal_enemies)
-        if hasattr(self, 'current_boss') and self.current_boss:
-            all_enemies.append(self.current_boss)
-        return all_enemies
-
     def draw(self, screen):
         # If showing skill video, render it first
         if self.showing_skill_video and self.skill_video:
@@ -428,12 +651,19 @@ class mapninjaman1Scene(BaseMapScene):
         # Vẽ các lớp nền phía trước (che phủ nhân vật) nếu có
         self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
 
+        # Draw Sasuke skill effects (Iori assists)
+        if hasattr(self, 'sasuke_skill_manager'):
+            self.sasuke_skill_manager.draw(screen, self.camera_x)
+
         # Draw UI buttons and HUD on top
         self.action_buttons.draw(screen, player=self.player)
 
         # Draw skill UI if player is Chiến Thần Lạc Hồng
         if "chien_than_lac_hong" in self.player.folder:
-            self.draw_universal_skill_ui(screen)
+            self.draw_skill_ui(screen)
+            
+        # Draw bullets for ALL characters (moved out of skill UI)
+        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
     def draw_skill_ui(self, screen):
         """Vẽ UI skill ở góc trên bên trái, dưới thanh máu/mana"""
         # Position below HP/Mana bars
@@ -501,5 +731,9 @@ class mapninjaman1Scene(BaseMapScene):
             
             screen.blit(ready_text, (status_x, status_y))
 
-
-        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
+    def get_all_enemies(self):
+        """Override BaseMapScene method to provide enemies list"""
+        enemies = list(self.normal_enemies)
+        if self.current_boss and not getattr(self.current_boss, 'dead', False):
+            enemies.append(self.current_boss)
+        return enemies

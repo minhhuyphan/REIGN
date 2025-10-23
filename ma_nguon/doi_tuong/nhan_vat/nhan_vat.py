@@ -61,11 +61,20 @@ class Character:
         
         # Special skill type dựa trên folder
         self.special_skill = None
-        if "chien_binh" in folder:
+        lf = folder.lower() if isinstance(folder, str) else ''
+        if "chien_binh" in lf:
             self.special_skill = "clone_summon"
             self.skill_mana_cost = 120  # Chi phí mana cao hơn cho skill phân thân
-        elif "chien_than_lac_hong" in folder:
+        elif "chien_than_lac_hong" in lf:
             self.special_skill = "damage_aoe"  # Skill gây damage khu vực
+        # Sasuke / ninja throwing projectiles (phi tiêu) detection
+        elif "sasuke" in lf or "ninja" in lf:
+            self.special_skill = "sasuke_projectile"
+            self.skill_mana_cost = 25  # Mana cost thấp để dễ sử dụng
+            self.skill_damage = 120
+            # Tăng mana pool cho Sasuke để có thể ném nhiều phi tiêu
+            self.max_mana = 300
+            self.mana = 300
         
         # Controls - sử dụng settings manager nếu không có controls được truyền vào
         self.settings_manager = get_settings_manager()
@@ -141,7 +150,7 @@ class Character:
     def _load_animations(self, folder):
         """Tải tất cả animation từ thư mục, đảm bảo tất cả có cùng kích thước"""
         animations = {}
-        action_types = ["dung_yen", "chay", "danh", "da", "nga", "do", "nhay", "ban"]
+        action_types = ["dung_yen", "chay", "danh", "da", "nga", "do", "nhay", "ban", "nem_phi_tieu"]
         
         # Chuẩn hóa kích thước mặc định cho mọi animation
         base_width = 100
@@ -216,18 +225,35 @@ class Character:
             return
             
         # Nếu là chiêu ban thì kiểm tra mana và xem có phải nhân vật tho_san_quai_vat không
+        # Nếu là chiêu ném phi tiêu (dành cho Sasuke/ninja)
+        if action_type == "nem_phi_tieu":
+            if self.special_skill == "sasuke_projectile":
+                mana_cost = 15
+                if self.mana < mana_cost:
+                    print("Không đủ mana để ném phi tiêu!")
+                    return
+                self.mana -= mana_cost
+                # Setup flag để spawn phi tiêu ở frame đúng trong animation
+                self._projectile_spawned = False
+        
         if action_type == "ban":
-            # Chỉ nhân vật tho_san_quai_vat mới có chiêu này
-            if "tho_san_quai_vat" not in self.folder:
-                print("Nhân vật này không có chiêu bắn!")
+            # Support: regular shooter (tho_san_quai_vat) OR special projectile skill (sasuke)
+            if self.special_skill == "sasuke_projectile":
+                # Use nem_phi_tieu animation instead of ban for Sasuke
+                self.start_action("nem_phi_tieu")
                 return
-            mana_cost = 40
-            if self.mana < mana_cost:
-                print("Không đủ mana để dùng chiêu!")
-                return
-            self.mana -= mana_cost
-            # Tạo viên đạn khi bắt đầu animation bắn
-            self._create_bullet()
+            else:
+                # Chỉ nhân vật tho_san_quai_vat mới có chiêu này
+                if "tho_san_quai_vat" not in (self.folder or ""):
+                    print("Nhân vật này không có chiêu bắn!")
+                    return
+                mana_cost = 40
+                if self.mana < mana_cost:
+                    print("Không đủ mana để dùng chiêu!")
+                    return
+                self.mana -= mana_cost
+                # Tạo viên đạn khi bắt đầu animation bắn
+                self._create_bullet()
         
         self.actioning = True
         self.action_type = action_type
@@ -248,11 +274,27 @@ class Character:
 
     def play_animation(self):
         now = pygame.time.get_ticks()
-        # Animation bắn chậm hơn các animation khác
-        cooldown = 200 if self.state == "ban" else self.animation_cooldown
+        # Animation bắn và ném phi tiêu chậm hơn các animation khác
+        cooldown = 200 if self.state in ["ban", "nem_phi_tieu"] else self.animation_cooldown
         if now - self.last_update > cooldown:
             self.last_update = now
+            old_frame = self.frame
             self.frame += 1
+            
+            # Kiểm tra xem có phải đang ở frame ném phi tiêu không
+            if self.state == "nem_phi_tieu" and hasattr(self, '_projectile_spawned'):
+                if not self._projectile_spawned:
+                    max_frames = len(self.animations[self.state]) if self.state in self.animations else 1
+                    # Spawn projectile ở 70% animation (gần frame cuối)
+                    spawn_frame = max(1, int(max_frames * 0.7))
+                    if self.frame >= spawn_frame:
+                        self._projectile_spawned = True
+                        # Spawn shuriken tại thời điểm này
+                        try:
+                            self._spawn_sasuke_projectile(count=1, spread=6)
+                            print(f"[SASUKE] Ném phi tiêu tại frame {self.frame}/{max_frames}! Mana: {self.mana}")
+                        except Exception:
+                            pass
 
         # Đảm bảo animation tồn tại
         if self.state not in self.animations:
@@ -264,11 +306,14 @@ class Character:
         
         # Kiểm tra và xử lý khi animation kết thúc
         if self.frame >= max_frames:
-            if self.state in ["danh", "da", "do", "nhay", "ban"]:
+            if self.state in ["danh", "da", "do", "nhay", "ban", "nem_phi_tieu"]:
                 self.actioning = False
                 self.state = "dung_yen"
                 self.frame = 0
                 self.damaged = False
+                # Reset projectile spawned flag
+                if hasattr(self, '_projectile_spawned'):
+                    self._projectile_spawned = False
             elif self.state == "nga":
                 self.frame = max_frames - 1
             else:
@@ -501,6 +546,12 @@ class Character:
         # Thực hiện skill dựa trên loại
         if self.special_skill == "clone_summon":
             self._activate_clone_skill()
+        elif self.special_skill == "sasuke_projectile":
+            # Spawn a shuriken projectile (or multiple) in front of the player
+            try:
+                self._spawn_sasuke_projectile()
+            except Exception:
+                pass
         
         return True
         
@@ -523,6 +574,43 @@ class Character:
         for pos_x, pos_y in clone_positions:
             clone = WarriorClone(pos_x, pos_y, self, duration=15000)  # 15 giây
             self.clone_manager.add_clone(clone)
+
+    def _spawn_sasuke_projectile(self, count=3, spread=10):
+        """Spawn `ShurikenBullet` projectiles in front of the character.
+
+        Args:
+            count: number of shurikens to spawn (default 3)
+            spread: pixel offset between successive shurikens
+        """
+        try:
+            from ma_nguon.doi_tuong.bullet import ShurikenBullet
+        except Exception:
+            # Bullet class unavailable
+            return
+
+        direction = -1 if getattr(self, 'flip', False) else 1
+        base_x = int(self.x + (60 if direction == 1 else -40))
+        base_y = int(self.y + 45)  # Hạ thấp phi tiêu xuống
+
+        print(f"[DEBUG] Spawning {count} shurikens at ({base_x}, {base_y}), direction: {direction}")
+
+        for i in range(count):
+            # spread them slightly vertically/horizontally
+            off_x = i * spread * direction
+            off_y = -i * (spread // 3)
+            try:
+                sh = ShurikenBullet(base_x + off_x, base_y + off_y, direction, self.skill_damage, self)
+                # Mark as skill bullet (redundant because ShurikenBullet sets it)
+                setattr(sh, 'is_sasuke_skill', True)
+                self.bullets.append(sh)
+                print(f"[DEBUG] Created shuriken {i+1}/{count} at ({base_x + off_x}, {base_y + off_y})")
+            except Exception as e:
+                print(f"[DEBUG] Error creating shuriken {i+1}: {e}")
+                continue
+        
+        print(f"[DEBUG] Total bullets after spawn: {len(self.bullets)}")
+
+    
             
     def handle_skill_input(self, event, enemies_list=None):
         """Xử lý input skill - gọi từ bất kỳ map nào"""

@@ -7,9 +7,9 @@ class AutumnLevelsSceneninja:
         self.game = game
         self.font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 50)
         self.selected = 0
-        self.options = ["Màn 1 - Trận Chiến Khởi Đầu", "Màn 2 -Trận Chiến Của Ninja Huyền Thoại" "Quay lại"]
-        self.level_scenes = ["map_ninja_man1", "", "menu"]
-        
+        self.options = ["Màn 1 - Trận Chiến Khởi Đầu", "Màn 2 -Trận Chiến Của Ninja Huyền Thoại", "Quay lại"]
+        self.level_scenes = ["map_ninja_man1", "map_ninja_man2", "menu"]
+
         # Animation variables
         self.bounce_offset = 0
         self.bounce_speed = 0.1
@@ -149,7 +149,7 @@ class AutumnLevelsSceneninja:
             (200, 200, 200)  # Gray - Back
         ]
         
-        difficulty_texts = ["[DỄ]", "[TRUNG BÌNH]", "[KHÓ]", ""]
+        difficulty_texts = ["[DỄ]", "[TRUNG BÌNH]", ""]
         
         # Menu options with difficulty indicators
         for i, text in enumerate(self.options):
