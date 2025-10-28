@@ -1,6 +1,10 @@
 {
   "phuc11": {
+<<<<<<< HEAD
     "gold": 140,
+=======
+    "gold": 0,
+>>>>>>> 05b14b4640e9450dfe58fbe17dc3dee704c58c76
     "purchased_characters": [
       "chien_binh"
     ]
