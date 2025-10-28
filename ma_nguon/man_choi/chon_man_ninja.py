@@ -56,16 +56,47 @@ class AutumnLevelsSceneninja:
             elif event.key == pygame.K_DOWN:
                 self.selected = (self.selected + 1) % len(self.options)
             elif event.key == pygame.K_RETURN:
-                if self.selected < 3:  # Màn 1, 2, 3
-                    # Lưu thông tin màn được chọn và chuyển thẳng vào game
-                    # (Nhân vật đã được chọn trước đó)
-                    self.game.target_level = self.level_scenes[self.selected]
-                    self.game.change_scene(self.level_scenes[self.selected])
-                else:  # Quay lại menu chính
-                    self.game.change_scene("menu")
+                self._execute_selected_option()
             elif event.key == pygame.K_ESCAPE:
                 # Quay lại màn chọn map
                 self.game.change_scene("chon_map")
+        
+        # Mouse support
+        elif event.type == pygame.MOUSEMOTION:
+            mx, my = event.pos
+            hovered = self._get_option_at_position(mx, my)
+            if hovered is not None:
+                self.selected = hovered
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mx, my = event.pos
+            clicked = self._get_option_at_position(mx, my)
+            if clicked is not None:
+                self.selected = clicked
+                self._execute_selected_option()
+    
+    def _execute_selected_option(self):
+        """Thực thi option được chọn"""
+        if self.selected < 2:  # Màn 1, 2 (index 0, 1)
+            # Lưu thông tin màn được chọn và chuyển thẳng vào game
+            self.game.target_level = self.level_scenes[self.selected]
+            self.game.change_scene(self.level_scenes[self.selected])
+        else:  # Quay lại menu chính
+            self.game.change_scene("menu")
+    
+    def _get_option_at_position(self, mx, my):
+        """Kiểm tra xem chuột có hover/click vào option nào không"""
+        menu_start_y = 200
+        menu_spacing = 80
+        
+        for i in range(len(self.options)):
+            option_y = menu_start_y + i * menu_spacing
+            option_height = 60
+            
+            if option_y <= my <= option_y + option_height:
+                return i
+        
+        return None
 
     def update(self):
         # Title scale animation
