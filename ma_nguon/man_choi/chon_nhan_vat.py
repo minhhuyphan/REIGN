@@ -499,21 +499,21 @@ class CharacterSelectScene:
             equipment_bonuses = {'hp': 0, 'damage': 0, 'defense': 0, 'speed': 0}
             if user and cid and owned:
                 try:
-                    from ma_nguon.doi_tuong.equipment import get_equipment_manager
+                    from ma_nguon.doi_tuong.items import EQUIPMENT_DATA
                     profile = profile_manager.load_profile(user)
                     char_equipment = profile.get('character_equipment', {}).get(cid, {})
                     
                     if char_equipment:
-                        eq_manager = get_equipment_manager()
+                        # Lấy bonus trực tiếp từ EQUIPMENT_DATA thay vì qua manager
                         for slot_type, eq_name in char_equipment.items():
-                            eq = eq_manager.get_equipment_by_name(eq_name)
-                            if eq:
-                                equipment_bonuses['hp'] += eq.hp_bonus
-                                equipment_bonuses['damage'] += eq.attack_bonus
-                                equipment_bonuses['defense'] += eq.defense_bonus
-                                equipment_bonuses['speed'] += eq.speed_bonus
-                except Exception:
-                    pass
+                            eq_data = EQUIPMENT_DATA.get(eq_name)
+                            if eq_data:
+                                equipment_bonuses['hp'] += eq_data.get('hp_bonus', 0)
+                                equipment_bonuses['damage'] += eq_data.get('attack_bonus', 0)
+                                equipment_bonuses['defense'] += eq_data.get('defense_bonus', 0)
+                                equipment_bonuses['speed'] += eq_data.get('speed_bonus', 0)
+                except Exception as e:
+                    print(f"[CHON_NV] Lỗi load equipment bonuses: {e}")
             
             # Draw stats aligned inside the card với màu sắc đẹp hơn
             stat_x = pos_x - card_w // 2 + 12
