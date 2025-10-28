@@ -38,29 +38,63 @@ class MenuScene:
             elif event.key == pygame.K_DOWN:
                 self.selected = (self.selected + 1) % len(self.options)
             elif event.key == pygame.K_RETURN:
-                # Dispatch by option label (safer than hard-coded indices)
-                selected_text = self.options[self.selected]
-                if selected_text == "Chọn Map":
-                    self.game.change_scene("chon_map")
-                elif selected_text == "Trang bị":
-                    self.game.change_scene("equipment")
-                elif selected_text == "Cửa hàng":
-                    self.game.change_scene("shop")
-                elif selected_text == "Xếp hạng":
-                    self.game.change_scene("leaderboard")
-                elif selected_text == "Hướng dẫn":
-                    self.game.change_scene("help")
-                elif selected_text == "Cài đặt":
-                    self.game.change_scene("settings")
-                elif selected_text == "Đăng xuất":
-                    # logout
-                    from ma_nguon.tien_ich import user_store
-                    user_store.clear_session()
-                    self.game.current_user = None
-                    self.game.profile = None
-                    self.game.change_scene('login')
-                elif selected_text == "Thoát":
-                    self.game.running = False
+                self._execute_selected_option()
+        
+        # Mouse support
+        elif event.type == pygame.MOUSEMOTION:
+            mx, my = event.pos
+            hovered = self._get_option_at_position(mx, my)
+            if hovered is not None:
+                self.selected = hovered
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mx, my = event.pos
+            clicked = self._get_option_at_position(mx, my)
+            if clicked is not None:
+                self.selected = clicked
+                self._execute_selected_option()
+    
+    def _execute_selected_option(self):
+        """Thực thi option được chọn"""
+        selected_text = self.options[self.selected]
+        if selected_text == "Chọn Map":
+            self.game.change_scene("chon_map")
+        elif selected_text == "Trang bị":
+            self.game.change_scene("equipment")
+        elif selected_text == "Cửa hàng":
+            self.game.change_scene("shop")
+        elif selected_text == "Xếp hạng":
+            self.game.change_scene("leaderboard")
+        elif selected_text == "Hướng dẫn":
+            self.game.change_scene("help")
+        elif selected_text == "Cài đặt":
+            self.game.change_scene("settings")
+        elif selected_text == "Đăng xuất":
+            # logout
+            from ma_nguon.tien_ich import user_store
+            user_store.clear_session()
+            self.game.current_user = None
+            self.game.profile = None
+            self.game.change_scene('login')
+        elif selected_text == "Thoát":
+            self.game.running = False
+    
+    def _get_option_at_position(self, mx, my):
+        """Kiểm tra xem chuột có hover/click vào option nào không"""
+        screen_height = self.game.HEIGHT
+        menu_start_y = 250
+        menu_spacing = 60
+        
+        for i in range(len(self.options)):
+            option_y = menu_start_y + i * menu_spacing
+            # Ước tính chiều cao của text
+            option_height = 50
+            
+            if option_y <= my <= option_y + option_height:
+                # Check x position (center aligned)
+                return i
+        
+        return None
 
 
     def update(self):

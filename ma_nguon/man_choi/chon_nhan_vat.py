@@ -1,5 +1,6 @@
 import pygame
 import os
+import time
 from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.core import profile_manager
 from ma_nguon.doi_tuong.character_stats import CHARACTER_STATS
@@ -123,10 +124,40 @@ class CharacterSelectScene:
         # Mouse drag for horizontal scrolling
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
-            # if clicked near the scrollbar area, start dragging scrollbar
-            self.dragging = True
-            self.drag_start_x = mx
-            self.scroll_start = self.scroll_x
+            
+            # Check if clicked on a character card
+            clicked_char = self._get_character_at_position(mx, my)
+            if clicked_char is not None:
+                self.selected_idx = clicked_char
+                # Double click to confirm
+                if hasattr(self, '_last_click_time') and hasattr(self, '_last_click_idx'):
+                    import time
+                    current_time = time.time()
+                    if current_time - self._last_click_time < 0.5 and self._last_click_idx == clicked_char:
+                        # Double click detected - confirm selection
+                        cur = self.characters[self.selected_idx]
+                        cid = cur.get('id')
+                        user = getattr(self.game, 'current_user', None)
+                        owned = False
+                        if user:
+                            profile = profile_manager.load_profile(user)
+                            owned = cid in profile.get('purchased_characters', [])
+                        else:
+                            owned = (cur.get('price', 0) == 0)
+
+                        if owned:
+                            self.confirm = True
+                            self._create_player()
+                        else:
+                            self._set_message('khoá', 180)
+                
+                self._last_click_time = time.time()
+                self._last_click_idx = clicked_char
+            else:
+                # Start dragging for scrollbar
+                self.dragging = True
+                self.drag_start_x = mx
+                self.scroll_start = self.scroll_x
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.dragging = False
         elif event.type == pygame.MOUSEMOTION and self.dragging:
@@ -218,6 +249,35 @@ class CharacterSelectScene:
     def _ensure_selected_visible(self):
         # recompute layout to determine where selected sits
         num_characters = len(self.characters)
+    
+    def _get_character_at_position(self, mx, my):
+        """Kiểm tra xem chuột có click vào nhân vật nào không"""
+        num_characters = len(self.characters)
+        gap = 30
+        max_card_w = 220
+        available_width = max(self.screen_width - gap * (num_characters + 1), 100)
+        card_w = min(max_card_w, max(100, available_width // num_characters))
+        top_margin = 120
+        bottom_margin = 120
+        max_card_h_allowed = max(150, self.screen_height - top_margin - bottom_margin)
+        card_h = min(int(card_w * 1.45), max_card_h_allowed)
+        total_width = card_w * num_characters + gap * (num_characters - 1)
+        start_x = max((self.screen_width - total_width) // 2, gap)
+        
+        for i in range(num_characters):
+            pos_x = start_x + i * (card_w + gap) + card_w // 2 - int(self.scroll_x)
+            pos_y = self.screen_height // 2 - card_h // 2 - 20
+            
+            # Check if mouse is within card bounds
+            card_left = pos_x - card_w // 2
+            card_right = pos_x + card_w // 2
+            card_top = pos_y
+            card_bottom = pos_y + card_h
+            
+            if card_left <= mx <= card_right and card_top <= my <= card_bottom:
+                return i
+        
+        return None
         gap = 30
         max_card_w = 220
         available_width = max(self.screen_width - gap * (num_characters + 1), 100)
