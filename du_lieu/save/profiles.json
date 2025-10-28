@@ -1,11 +1,13 @@
 {
   "phuc11": {
+
     "gold": 100000000,
     "purchased_characters": [
       "chien_binh"
     ]
   },
   "huy": {
+
     "gold": 2989899938986,
     "purchased_characters": [
       "chien_binh",
@@ -39,5 +41,7 @@
         "boots": "Giày Thiên Thần"
       }
     }
+
   }
+}
 }
