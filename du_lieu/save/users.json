@@ -2,5 +2,9 @@
   "phuc11": {
     "salt": "f8ccde95be24f1f6bff91b6a89ce3f5d",
     "pw_hash": "cd4ac8a672cf86ba1584a4ad584666b58924d636704737c2f782f4ccbb292658"
+  },
+  "huy": {
+    "salt": "9de33df9186652991d2411f8f659893b",
+    "pw_hash": "ecb31be03cb431b31cd4d5d2ef9b367a61441063397df2d4c398d496e0a4aa77"
   }
 }

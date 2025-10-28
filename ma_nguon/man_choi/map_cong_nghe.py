@@ -15,6 +15,7 @@ from ma_nguon.tien_ich.equipment_loader import load_and_apply_equipment
 
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer
 from ma_nguon.man_choi.base_map_scene import BaseMapScene
+from ma_nguon.core import high_scores
 
 
 class MapCongNgheScene(BaseMapScene):
@@ -389,7 +390,37 @@ class MapCongNgheScene(BaseMapScene):
                 # Check if all enemies are defeated to change scene
                 if not self.normal_enemies and not hasattr(self, 'victory_triggered'):
                     print("[VICTORY] All enemies defeated!")
+                    # Mark victory and reward player + update leaderboard
                     self.victory_triggered = True
+                    try:
+                        # Compute score similar to game over logic
+                        bosses_killed = len([b for b in (self.bosses or []) if getattr(b, "dead", False)]) if self.bosses else 0
+                        score = bosses_killed * 1500
+                        score += (self.initial_enemy_count - len(self.normal_enemies)) * 150
+
+                        # Add to leaderboard (non-fatal)
+                        try:
+                            user = getattr(self.game, 'current_user', None) or 'Guest'
+                            key = "map_cong_nghe"
+                            high_scores.add_score(key, user, int(score))
+                        except Exception as e:
+                            print(f"[WARN] Could not update high scores: {e}")
+
+                        # Reward gold to player (will be committed by Game.change_scene via commit_session_gold)
+                        gold_reward = max(50, int(score / 10))
+                        try:
+                            if hasattr(self, 'player') and self.player:
+                                if hasattr(self.player, 'gold'):
+                                    self.player.gold += gold_reward
+                                else:
+                                    self.player.gold = gold_reward
+                                print(f"[REWARD] Awarded {gold_reward} gold to player (session).")
+                        except Exception:
+                            pass
+                    except Exception:
+                        traceback.print_exc()
+
+                    # Finally change to victory scene (Game.change_scene will commit session gold)
                     self.game.change_scene("victory")
         else:
             print("[ERROR] Boss system not properly initialized")

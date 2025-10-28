@@ -5,5 +5,12 @@
       "chien_binh",
       "tho_san_quai_vat"
     ]
+  },
+  "huy": {
+    "gold": 299,
+    "purchased_characters": [
+      "chien_binh",
+      "tho_san_quai_vat"
+    ]
   }
 }
