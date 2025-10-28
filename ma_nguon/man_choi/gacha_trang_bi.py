@@ -77,6 +77,12 @@ class GachaTrangBiScene:
         # Epic: 8%
         # Legendary: 2%
         
+        # Thêm vàng vào pool (15% chance = 30/200)
+        gold_amounts = [50, 100, 200, 500]  # Các mức vàng có thể nhận
+        for _ in range(30):  # 15% tổng pool
+            amount = random.choice(gold_amounts)
+            pool.append(f"GOLD:{amount}")
+        
         for item_id, item_data in EQUIPMENT_DATA.items():
             rarity = item_data.get("rarity", "common")
             
@@ -157,10 +163,18 @@ class GachaTrangBiScene:
         # Lấy danh sách nhân vật đã mua
         purchased_characters = profile.get('purchased_characters', [])
         
+        # Track total gold earned
+        total_gold_earned = 0
+        
         # Add result items to inventory (có thể trùng lặp)
         for item_id in self.result_items:
+            # Kiểm tra nếu là vàng
+            if item_id.startswith("GOLD:"):
+                gold_amount = int(item_id.replace("GOLD:", ""))
+                total_gold_earned += gold_amount
+                print(f"[GACHA] Nhận được vàng: {gold_amount}")
             # Kiểm tra nếu là nhân vật
-            if item_id.startswith("CHARACTER:"):
+            elif item_id.startswith("CHARACTER:"):
                 char_id = item_id.replace("CHARACTER:", "")
                 if char_id not in purchased_characters:
                     purchased_characters.append(char_id)
@@ -168,6 +182,12 @@ class GachaTrangBiScene:
             else:
                 # Là trang bị
                 inventory[item_id] = inventory.get(item_id, 0) + 1
+        
+        # Cộng vàng vào profile
+        if total_gold_earned > 0:
+            current_gold = profile.get('gold', 0)
+            profile['gold'] = current_gold + total_gold_earned
+            print(f"[GACHA] Tổng vàng nhận: {total_gold_earned}, Vàng hiện tại: {profile['gold']}")
         
         profile['equipment_inventory'] = inventory
         profile['purchased_characters'] = purchased_characters
@@ -462,10 +482,17 @@ class GachaTrangBiScene:
             x = start_x + col * (card_width + gap)
             y = start_y + row * (card_height + gap)
             
-            # Kiểm tra nếu là nhân vật
+            # Kiểm tra loại item
+            is_gold = item_id.startswith("GOLD:")
             is_character = item_id.startswith("CHARACTER:")
             
-            if is_character:
+            if is_gold:
+                # Xử lý vàng
+                gold_amount = int(item_id.replace("GOLD:", ""))
+                name = f"+{gold_amount} Vàng"
+                rarity = "legendary"  # Vàng có màu vàng legendary
+                rarity_color = self.rarity_colors.get(rarity, (255, 215, 0))
+            elif is_character:
                 # Xử lý nhân vật
                 char_id = item_id.replace("CHARACTER:", "")
                 character_names = {
@@ -501,7 +528,14 @@ class GachaTrangBiScene:
             pygame.draw.rect(screen, rarity_color, card_rect, 3, border_radius=10)
             
             # Draw image
-            if is_character:
+            if is_gold:
+                # Vẽ icon vàng (💰 emoji hoặc vòng tròn vàng)
+                gold_icon_font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 60)
+                gold_icon = gold_icon_font.render('💰', True, (255, 215, 0))
+                icon_x = x + (card_width - gold_icon.get_width()) // 2
+                icon_y = y + 40
+                screen.blit(gold_icon, (icon_x, icon_y))
+            elif is_character:
                 # Vẽ ảnh nhân vật
                 char_id = item_id.replace("CHARACTER:", "")
                 char_img_path = f"tai_nguyen/hinh_anh/nhan_vat/{char_id}/dung_yen/0.png"
@@ -517,35 +551,36 @@ class GachaTrangBiScene:
                         pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
                 else:
                     pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
-            elif image_path:
+            elif not is_gold and not is_character:
                 # Draw equipment image
-                # Build full path
-                full_path = os.path.join("tai_nguyen", "hinh_anh", "trang_bi", image_path)
-                if not os.path.exists(full_path):
-                    # Try uppercase variant
-                    full_path = os.path.join("Tai_nguyen", "hinh_anh", "trang_bi", image_path)
+                item_data = EQUIPMENT_DATA.get(item_id, {})
+                image_path = item_data.get("image_path", "")
                 
-                if os.path.exists(full_path):
-                    try:
-                        equip_img = pygame.image.load(full_path).convert_alpha()
-                        # Scale image to fit card
-                        img_size = 80
-                        equip_img = pygame.transform.scale(equip_img, (img_size, img_size))
-                        img_x = x + (card_width - img_size) // 2
-                        img_y = y + 30
-                        screen.blit(equip_img, (img_x, img_y))
-                        print(f"[GACHA] Loaded image: {full_path}")
-                    except Exception as e:
-                        print(f"[GACHA] Failed to load image {full_path}: {e}")
-                        # If image fails, draw placeholder
+                if image_path:
+                    # Build full path
+                    full_path = os.path.join("tai_nguyen", "hinh_anh", "trang_bi", image_path)
+                    if not os.path.exists(full_path):
+                        # Try uppercase variant
+                        full_path = os.path.join("Tai_nguyen", "hinh_anh", "trang_bi", image_path)
+                    
+                    if os.path.exists(full_path):
+                        try:
+                            equip_img = pygame.image.load(full_path).convert_alpha()
+                            # Scale image to fit card
+                            img_size = 80
+                            equip_img = pygame.transform.scale(equip_img, (img_size, img_size))
+                            img_x = x + (card_width - img_size) // 2
+                            img_y = y + 30
+                            screen.blit(equip_img, (img_x, img_y))
+                        except Exception as e:
+                            # If image fails, draw placeholder
+                            pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
+                    else:
+                        # Placeholder icon
                         pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
                 else:
-                    print(f"[GACHA] Image not found: {full_path}")
                     # Placeholder icon
                     pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
-            else:
-                # Placeholder icon
-                pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
             
             # Item name (wrapped)
             name_lines = self._wrap_text(name, self.font_small, card_width - 20)
@@ -555,8 +590,10 @@ class GachaTrangBiScene:
                 screen.blit(line_surf, (x + card_width//2 - line_surf.get_width()//2, name_y))
                 name_y += 22
             
-            # Stats (chỉ hiển thị cho trang bị, không cho nhân vật)
-            if not is_character:
+            # Stats (chỉ hiển thị cho trang bị, không cho nhân vật hoặc vàng)
+            if not is_character and not is_gold:
+                # Get item data for equipment
+                item_data = EQUIPMENT_DATA.get(item_id, {})
                 stats_y = y + card_height - 50
                 stats_font = pygame.font.Font(None, 18)
                 
@@ -573,10 +610,14 @@ class GachaTrangBiScene:
                 elif speed_bonus > 0:
                     stat_text = stats_font.render(f"+{speed_bonus} SPD", True, (100, 200, 255))
                     screen.blit(stat_text, (x + 10, stats_y))
-            else:
+            elif is_character:
                 # Hiển thị label "NHÂN VẬT" cho character
                 char_label = self.font_small.render("NHÂN VẬT", True, rarity_color)
                 screen.blit(char_label, (x + card_width//2 - char_label.get_width()//2, y + card_height - 50))
+            elif is_gold:
+                # Hiển thị label "VÀNG" cho gold
+                gold_label = self.font_small.render("VÀNG", True, rarity_color)
+                screen.blit(gold_label, (x + card_width//2 - gold_label.get_width()//2, y + card_height - 50))
             
             # Rarity badge
             rarity_text = self.font_small.render(rarity.upper(), True, rarity_color)
