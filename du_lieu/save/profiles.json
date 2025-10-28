@@ -1,6 +1,5 @@
 {
   "phuc11": {
-
     "gold": 659,
     "purchased_characters": [
       "chien_binh",
@@ -8,10 +7,28 @@
     ]
   },
   "huy": {
-    "gold": 299,
+    "gold": 9965714,
     "purchased_characters": [
       "chien_binh",
-      "tho_san_quai_vat"
-    ]
+      "tho_san_quai_vat",
+      "van_dao",
+      "mi_anh"
+    ],
+    "equipment_inventory": {
+      "Giáp Sắt": 32,
+      "Giap Sat Bi Ri": 61,
+      "Cung Gỗ": 56,
+      "Kiếm Sắt": 50,
+      "Kiếm Gỗ": 55,
+      "Giày Da": 65,
+      "Giay Da Boc Sat": 42,
+      "Giay Phu Phep": 11,
+      "Kiếm Rồng": 4,
+      "Ao Troang Bong Dem": 6,
+      "Giáp Ánh Sáng": 3,
+      "Cung Băng Lãm": 3,
+      "Giày Thiên Thần": 3,
+      "Nỏ Sét": 9
+    }
   }
 }

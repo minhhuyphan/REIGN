@@ -113,109 +113,211 @@ class GameOverScene:
         self.bounce_offset = 5 * math.sin(pygame.time.get_ticks() * self.bounce_speed / 100)
     
     def draw(self, screen):
-        # Semi-transparent overlay
-        overlay = pygame.Surface(screen.get_size())
-        overlay.set_alpha(self.fade_alpha)
-        overlay.fill(self.overlay_color[:3])
-        screen.blit(overlay, (0, 0))
+        # Dark gradient background
+        self._draw_gradient_background(screen)
         
         screen_width = screen.get_width()
         screen_height = screen.get_height()
         
-        # Game Over Title with scaling animation
+        # Calculate layout positions to avoid overlap
+        title_y = 80
+        info_y = 200
+        leaderboard_y = 280
+        buttons_y = screen_height - 300
+        
+        # ===== GAME OVER TITLE =====
         title_surface = self.title_font.render("GAME OVER", True, self.title_color)
         scaled_width = int(title_surface.get_width() * self.title_scale)
         scaled_height = int(title_surface.get_height() * self.title_scale)
         title_scaled = pygame.transform.scale(title_surface, (scaled_width, scaled_height))
         
-        title_x = screen_width // 2 - title_scaled.get_width() // 2
-        title_y = screen_height // 4
-        screen.blit(title_scaled, (title_x, title_y))
+        # Title shadow
+        shadow_offset = 4
+        shadow_surface = self.title_font.render("GAME OVER", True, (50, 0, 0))
+        shadow_scaled = pygame.transform.scale(shadow_surface, (scaled_width, scaled_height))
+        screen.blit(shadow_scaled, (screen_width // 2 - scaled_width // 2 + shadow_offset, 
+                                    title_y + shadow_offset))
+        # Title main
+        screen.blit(title_scaled, (screen_width // 2 - scaled_width // 2, title_y))
         
-        # Level and Score info
-        level_text = self.info_font.render(f"Màn: {self.level_name}", True, (200, 200, 200))
-        score_text = self.info_font.render(f"Điểm: {self.score}", True, (200, 200, 200))
+        # ===== LEVEL AND SCORE INFO PANEL =====
+        panel_width = 500
+        panel_height = 60
+        panel_x = screen_width // 2 - panel_width // 2
+        panel_y = info_y
         
-        screen.blit(level_text, (screen_width // 2 - level_text.get_width() // 2, title_y + title_scaled.get_height() + 20))
-        screen.blit(score_text, (screen_width // 2 - score_text.get_width() // 2, title_y + title_scaled.get_height() + 60))
+        # Panel background
+        panel_surface = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        pygame.draw.rect(panel_surface, (40, 40, 60, 200), (0, 0, panel_width, panel_height), border_radius=15)
+        pygame.draw.rect(panel_surface, (100, 100, 150, 150), (0, 0, panel_width, panel_height), 3, border_radius=15)
+        screen.blit(panel_surface, (panel_x, panel_y))
+        
+        # Level and Score text side by side
+        level_text = self.info_font.render(f"Màn: {self.level_name}", True, (255, 255, 255))
+        score_text = self.info_font.render(f"Điểm: {self.score}", True, (255, 215, 0))
+        
+        screen.blit(level_text, (panel_x + 30, panel_y + 15))
+        screen.blit(score_text, (panel_x + panel_width - score_text.get_width() - 30, panel_y + 15))
 
-        # Show top 5 scores for this level
+        # ===== LEADERBOARD PANEL =====
         try:
             key = self.level_name.replace(' ', '_').lower()
             top = high_scores.get_top_scores(key, 5)
-            hs_y = title_y + title_scaled.get_height() + 100
-            hs_title = self.info_font.render("Bảng xếp hạng", True, (230, 230, 230))
-            screen.blit(hs_title, (screen_width // 2 - hs_title.get_width() // 2, hs_y))
+            
+            # Leaderboard panel
+            lb_panel_width = 400
+            lb_panel_height = 200
+            lb_panel_x = screen_width // 2 - lb_panel_width // 2
+            lb_panel_y = leaderboard_y
+            
+            # Panel background
+            lb_surface = pygame.Surface((lb_panel_width, lb_panel_height), pygame.SRCALPHA)
+            pygame.draw.rect(lb_surface, (30, 30, 50, 220), (0, 0, lb_panel_width, lb_panel_height), border_radius=15)
+            pygame.draw.rect(lb_surface, (150, 150, 200, 100), (0, 0, lb_panel_width, lb_panel_height), 2, border_radius=15)
+            screen.blit(lb_surface, (lb_panel_x, lb_panel_y))
+            
+            # Leaderboard title
+            lb_title = self.info_font.render("🏆 BẢNG XẾP HẠNG", True, (255, 215, 0))
+            screen.blit(lb_title, (lb_panel_x + lb_panel_width // 2 - lb_title.get_width() // 2, lb_panel_y + 10))
+            
+            # Leaderboard entries
+            entry_font = pygame.font.Font("tai_nguyen/font/Fz-Donsky.ttf", 24)
             for i, e in enumerate(top):
-                txt = f"{i+1}. {e.get('user','Guest')} - {e.get('score',0)}"
-                txt_s = self.info_font.render(txt, True, (200,200,200))
-                screen.blit(txt_s, (screen_width // 2 - txt_s.get_width() // 2, hs_y + 30 + i * 28))
-        except Exception:
+                rank_color = [(255, 215, 0), (192, 192, 192), (205, 127, 50), (200, 200, 200), (200, 200, 200)][i]
+                txt = f"{i+1}. {e.get('user','Guest')[:12]}"
+                score_str = f"{e.get('score',0)}"
+                
+                txt_s = entry_font.render(txt, True, rank_color)
+                score_s = entry_font.render(score_str, True, (200, 255, 200))
+                
+                entry_y = lb_panel_y + 50 + i * 28
+                screen.blit(txt_s, (lb_panel_x + 30, entry_y))
+                screen.blit(score_s, (lb_panel_x + lb_panel_width - score_s.get_width() - 30, entry_y))
+        except Exception as e:
             pass
         
-        # Buttons
-        button_start_y = screen_height // 2 + 50
-        button_spacing = 80
+        # ===== BUTTONS =====
+        button_spacing = 70
         
         for i, button_text in enumerate(self.buttons):
             # Calculate button position with bounce effect
-            button_y = button_start_y + i * button_spacing
+            button_y = buttons_y + i * button_spacing
             if i == self.selected:
                 button_y += self.bounce_offset
             
-            # Button text
+            # Button background with modern style
+            button_width = 350
+            button_height = 55
+            button_x = screen_width // 2 - button_width // 2
+            button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+            
+            if i == self.selected:
+                # Selected button - gradient effect
+                button_surf = pygame.Surface((button_width, button_height), pygame.SRCALPHA)
+                pygame.draw.rect(button_surf, (80, 80, 120, 230), (0, 0, button_width, button_height), border_radius=12)
+                pygame.draw.rect(button_surf, self.button_selected, (0, 0, button_width, button_height), 4, border_radius=12)
+                screen.blit(button_surf, (button_x, button_y))
+                
+                # Glow effect
+                glow_surf = pygame.Surface((button_width + 10, button_height + 10), pygame.SRCALPHA)
+                pygame.draw.rect(glow_surf, (255, 215, 0, 50), (0, 0, button_width + 10, button_height + 10), border_radius=15)
+                screen.blit(glow_surf, (button_x - 5, button_y - 5))
+            else:
+                # Normal button
+                button_surf = pygame.Surface((button_width, button_height), pygame.SRCALPHA)
+                pygame.draw.rect(button_surf, (50, 50, 70, 180), (0, 0, button_width, button_height), border_radius=12)
+                pygame.draw.rect(button_surf, (100, 100, 130, 150), (0, 0, button_width, button_height), 2, border_radius=12)
+                screen.blit(button_surf, (button_x, button_y))
+            
+            # Button text centered
             color = self.button_selected if i == self.selected else self.button_normal
             button_surface = self.button_font.render(button_text, True, color)
-            button_x = screen_width // 2 - button_surface.get_width() // 2
-            
-            # Button background for selected button (aligned with text)
-            if i == self.selected:
-                button_bg_rect = pygame.Rect(0, 0, 300, 60)
-                button_bg_rect.center = (screen_width // 2, button_y + button_surface.get_height() // 2)
-                pygame.draw.rect(screen, self.button_hover_bg, button_bg_rect, border_radius=10)
-                pygame.draw.rect(screen, self.button_selected, button_bg_rect, 3, border_radius=10)
-            
-            # Draw button text
-            screen.blit(button_surface, (button_x, button_y))
+            text_x = screen_width // 2 - button_surface.get_width() // 2
+            text_y = button_y + (button_height - button_surface.get_height()) // 2
+            screen.blit(button_surface, (text_x, text_y))
         
-        # Instructions
-        instruction_text = self.info_font.render("↑↓ Di chuyển | Enter Chọn | ESC Về Menu", True, (150, 150, 150))
+        # ===== INSTRUCTIONS =====
+        instruction_text = self.info_font.render("↑↓ Di chuyển | Enter Chọn | ESC Menu", True, (180, 180, 180))
         instruction_x = screen_width // 2 - instruction_text.get_width() // 2
-        instruction_y = screen_height - 80
+        instruction_y = screen_height - 50
         screen.blit(instruction_text, (instruction_x, instruction_y))
         
-        # Optional: Add some decorative elements
+        # Optional decorations
         self.draw_decorations(screen)
     
+    def _draw_gradient_background(self, screen):
+        """Draw a dark gradient background"""
+        width = screen.get_width()
+        height = screen.get_height()
+        
+        for y in range(height):
+            progress = y / height
+            r = int(15 + (25 - 15) * progress)
+            g = int(15 + (20 - 15) * progress)
+            b = int(30 + (40 - 30) * progress)
+            pygame.draw.line(screen, (r, g, b), (0, y), (width, y))
+    
     def draw_decorations(self, screen):
-        """Draw some decorative elements to make the screen more appealing"""
+        """Draw decorative elements to make the screen more appealing"""
         screen_width = screen.get_width()
         screen_height = screen.get_height()
         
-        # Draw some fading particles or effects
         time_ms = pygame.time.get_ticks()
         
-        # Animated border
-        border_color = (100 + 50 * math.sin(time_ms * 0.003), 50, 50)
-        pygame.draw.rect(screen, border_color, (10, 10, screen_width - 20, screen_height - 20), 5)
+        # Animated particles floating around
+        import random
+        random.seed(42)  # Fixed seed for consistent particle positions
         
-        # Corner decorations
-        corner_size = 50
-        corner_color = (255, 100, 100, 100)
+        for i in range(30):
+            x = random.randint(0, screen_width)
+            base_y = random.randint(0, screen_height)
+            # Floating animation
+            y = base_y + 10 * math.sin(time_ms * 0.001 + i * 0.5)
+            
+            size = random.randint(2, 5)
+            alpha = int(100 + 100 * math.sin(time_ms * 0.002 + i))
+            alpha = max(50, min(200, alpha))
+            
+            particle_surf = pygame.Surface((size, size), pygame.SRCALPHA)
+            color = random.choice([
+                (255, 100, 100, alpha),  # Red
+                (100, 100, 255, alpha),  # Blue
+                (200, 200, 200, alpha)   # White
+            ])
+            pygame.draw.circle(particle_surf, color, (size // 2, size // 2), size // 2)
+            screen.blit(particle_surf, (x, y))
         
-        # Top-left corner
-        pygame.draw.lines(screen, corner_color[:3], False, 
-                         [(20, 60), (20, 20), (60, 20)], 3)
+        # Modern corner decorations
+        corner_length = 80
+        corner_thickness = 4
+        corner_color = (255, 100, 100)
         
-        # Top-right corner  
-        pygame.draw.lines(screen, corner_color[:3], False,
-                         [(screen_width - 60, 20), (screen_width - 20, 20), (screen_width - 20, 60)], 3)
+        # Animated glow
+        glow_intensity = int(50 + 50 * math.sin(time_ms * 0.003))
+        glow_color = (255, glow_intensity, glow_intensity)
         
-        # Bottom-left corner
-        pygame.draw.lines(screen, corner_color[:3], False,
-                         [(20, screen_height - 60), (20, screen_height - 20), (60, screen_height - 20)], 3)
+        # Top-left
+        pygame.draw.line(screen, glow_color, (30, 30), (30 + corner_length, 30), corner_thickness)
+        pygame.draw.line(screen, glow_color, (30, 30), (30, 30 + corner_length), corner_thickness)
         
-        # Bottom-right corner
-        pygame.draw.lines(screen, corner_color[:3], False,
-                         [(screen_width - 60, screen_height - 20), (screen_width - 20, screen_height - 20), 
-                          (screen_width - 20, screen_height - 60)], 3)
+        # Top-right
+        pygame.draw.line(screen, glow_color, (screen_width - 30, 30), 
+                        (screen_width - 30 - corner_length, 30), corner_thickness)
+        pygame.draw.line(screen, glow_color, (screen_width - 30, 30), 
+                        (screen_width - 30, 30 + corner_length), corner_thickness)
+        
+        # Bottom-left
+        pygame.draw.line(screen, glow_color, (30, screen_height - 30), 
+                        (30 + corner_length, screen_height - 30), corner_thickness)
+        pygame.draw.line(screen, glow_color, (30, screen_height - 30), 
+                        (30, screen_height - 30 - corner_length), corner_thickness)
+        
+        # Bottom-right
+        pygame.draw.line(screen, glow_color, (screen_width - 30, screen_height - 30), 
+                        (screen_width - 30 - corner_length, screen_height - 30), corner_thickness)
+        pygame.draw.line(screen, glow_color, (screen_width - 30, screen_height - 30), 
+                        (screen_width - 30, screen_height - 30 - corner_length), corner_thickness)
+        
+        # Subtle border frame
+        border_rect = pygame.Rect(20, 20, screen_width - 40, screen_height - 40)
+        pygame.draw.rect(screen, (80, 80, 100, 100), border_rect, 2, border_radius=10)
