@@ -55,19 +55,40 @@ class BaseMapScene:
             return False
             
     def _play_skill_video(self):
-        """Phát video skill cho Chiến Thần Lạc Hồng"""
+        """Phát video skill cho nhân vật có damage_aoe skill"""
         try:
+            import os
+            
             # Tạo callback để gây damage sau khi video kết thúc
             def on_skill_finish():
                 self.damage_nearby_enemies()
                 self.showing_skill_video = False
                 self.skill_video = None
             
-            # Phát video skill
-            video_path = "Tai_nguyen/video/skill_chien_than.mp4"
-            self.skill_video = SkillVideoPlayer(video_path, on_skill_finish)
-            self.showing_skill_video = True
-            return True
+            # Xác định video path dựa trên nhân vật
+            video_path = None
+            
+            if hasattr(self.player, 'folder'):
+                folder_lower = self.player.folder.lower()
+                if "van_dao" in folder_lower:
+                    video_path = "Tai_nguyen/video/skill_van_giao.mp4"  # File tên là van_giao
+                elif "chien_than_lac_hong" in folder_lower:
+                    video_path = "Tai_nguyen/video/skill_chien_than.mp4"
+            
+            # Kiểm tra file có tồn tại không
+            if video_path and os.path.exists(video_path):
+                # Phát video skill
+                self.skill_video = SkillVideoPlayer(video_path, on_skill_finish)
+                self.showing_skill_video = True
+                print(f"[SKILL] Phát video: {video_path}")
+                return True
+            else:
+                # Không có video - gây damage trực tiếp
+                if video_path:
+                    print(f"[SKILL] Không tìm thấy video: {video_path}")
+                print("[SKILL] Sử dụng skill không có video - gây damage trực tiếp")
+                self.damage_nearby_enemies()
+                return True
             
         except Exception as e:
             print(f"[SKILL] Lỗi phát video: {e}")
@@ -171,7 +192,7 @@ class BaseMapScene:
         
         skill_names = {
             "clone_summon": "PHÂN THÂN",
-            "damage_aoe": "CHIẾN THẦN",
+            "damage_aoe": "THẦN NỘ",
         }
         skill_name = skill_names.get(self.player.special_skill, "SKILL")
         

@@ -61,6 +61,15 @@ class Character:
         
         # Special skill type dựa trên folder
         self.special_skill = None
+
+        if "chien_binh" in folder.lower():
+            self.special_skill = "clone_summon"
+            self.skill_mana_cost = 120  # Chi phí mana cao hơn cho skill phân thân
+        elif "chien_than_lac_hong" in folder.lower():
+            self.special_skill = "damage_aoe"  # Skill gây damage khu vực
+        elif "van_dao" in folder.lower():
+            self.special_skill = "damage_aoe"  # Skill gây damage khu vực (video riêng)
+
         lf = folder.lower() if isinstance(folder, str) else ''
         if "chien_binh" in lf:
             self.special_skill = "clone_summon"
@@ -75,6 +84,7 @@ class Character:
             # Tăng mana pool cho Sasuke để có thể ném nhiều phi tiêu
             self.max_mana = 300
             self.mana = 300
+
         
         # Controls - sử dụng settings manager nếu không có controls được truyền vào
         self.settings_manager = get_settings_manager()

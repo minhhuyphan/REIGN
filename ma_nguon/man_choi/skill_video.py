@@ -38,6 +38,9 @@ class SkillVideoPlayer:
         
         # Audio support - tự động tìm và phát âm thanh
         self.audio_channel = None
+        self.audio_sound = None
+        self.music_was_playing = False
+        self.original_music_volume = 1.0
         self._load_audio(video_path)
         
         # Check if video exists and cv2 is available
@@ -112,10 +115,33 @@ class SkillVideoPlayer:
         """Phát audio nếu có"""
         if self.audio_sound:
             try:
+                # Set volume cao để nghe rõ
+                self.audio_sound.set_volume(1.0)  # 100% volume
+                
+                # Tạm dừng nhạc nền để nghe rõ skill audio
+                if pygame.mixer.music.get_busy():
+                    current_music_volume = pygame.mixer.music.get_volume()
+                    pygame.mixer.music.set_volume(0.2)  # Giảm nhạc nền xuống 20%
+                    self.music_was_playing = True
+                    self.original_music_volume = current_music_volume
+                else:
+                    self.music_was_playing = False
+                
+                # Phát audio skill
                 self.audio_channel = self.audio_sound.play()
-                print("[SKILL AUDIO] Playing audio...")
+                print("[SKILL AUDIO] Playing audio at 100% volume...")
             except Exception as e:
                 print(f"[SKILL AUDIO] Error playing audio: {e}")
+                self.music_was_playing = False
+    
+    def _restore_music(self):
+        """Khôi phục lại nhạc nền về volume ban đầu"""
+        if self.music_was_playing:
+            try:
+                pygame.mixer.music.set_volume(self.original_music_volume)
+                print(f"[SKILL AUDIO] Restored music volume to {self.original_music_volume}")
+            except Exception as e:
+                print(f"[SKILL AUDIO] Error restoring music: {e}")
     
     def update(self):
         """Cập nhật video frame"""
@@ -144,6 +170,9 @@ class SkillVideoPlayer:
                 print("[SKILL VIDEO] Video finished - Starting white flash!")
                 self.flash_active = True
                 self.flash_start_time = pygame.time.get_ticks()
+                
+                # Restore nhạc nền về volume ban đầu
+                self._restore_music()
                 return
             
             # Convert BGR to RGB

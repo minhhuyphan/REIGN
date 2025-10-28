@@ -838,7 +838,7 @@ class MapCongNgheScene(BaseMapScene):
         text_x = icon_x + icon_size + 10
         
         # Title
-        title_text = font_title.render("SKILL CHIẾN THẦN", True, (255, 215, 0))
+        title_text = font_title.render("THẦN NỘ", True, (255, 215, 0))
         screen.blit(title_text, (text_x, ui_y + 5))
         
         # Cooldown display
