@@ -9,10 +9,12 @@ from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
 from ma_nguon.man_choi.skill_video import SkillVideoPlayer, HAS_CV2
+from ma_nguon.man_choi.base_map_scene import BaseMapScene
 
 
-class mapninjaman2Scene:
+class mapninjaman2Scene(BaseMapScene):
     def __init__(self, game, player=None):
+        super().__init__()
         self.game = game
         # Debug flag to print alignment info
         self.DEBUG_ALIGN = True
@@ -266,6 +268,13 @@ class mapninjaman2Scene:
         # Let UI handle clicks first
         if self.action_buttons.handle_event(event, player=self.player):
             return
+        # Universal skill input handling (from BaseMapScene)
+        try:
+            if self.handle_universal_skill_input(event):
+                return
+        except Exception:
+            # If something goes wrong with universal skill handling, continue gracefully
+            pass
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.game.change_scene("menu")
@@ -579,10 +588,15 @@ class mapninjaman2Scene:
 
     def update(self):
         """Cập nhật trạng thái màn chơi ninja man 2"""
-        # If final boss video is playing (like skill video in map1)
-        if self.showing_skill_video and self.skill_video:
-            self.skill_video.update()
-            return  # Pause game logic while video plays
+        # Universal skill system update (pause game if skill video is showing)
+        try:
+            if self.update_universal_skills():
+                return
+        except Exception:
+            # If update_universal_skills isn't available or fails, fallback to prior behavior
+            if self.showing_skill_video and self.skill_video:
+                self.skill_video.update()
+                return  # Pause game logic while video plays
 
         # If we're using the splash/timer fallback for boss intro video,
         # spawn the pending boss once the timer elapses.
@@ -845,6 +859,16 @@ class mapninjaman2Scene:
             screen.blit(rotated_leaf, rect)
 
 
+        def get_all_enemies(self):
+            """Lấy tất cả enemies để truyền cho skill system (normal_enemies + current_boss)"""
+            all_enemies = []
+            if hasattr(self, 'normal_enemies') and self.normal_enemies:
+                all_enemies.extend(self.normal_enemies)
+            if hasattr(self, 'current_boss') and self.current_boss:
+                all_enemies.append(self.current_boss)
+            return all_enemies
+
+
     def draw(self, screen):
         # If showing final boss video, draw it fullscreen (like skill video in map1)
         if self.showing_skill_video and self.skill_video:
@@ -865,6 +889,13 @@ class mapninjaman2Scene:
         screen.blit(text, (screen.get_width()//2 - text.get_width()//2, 50))
         info = pygame.font.Font("Tai_nguyen/font/Fz-Donsky.ttf", 30).render("Nhấn ESC để về menu", True, (160, 82, 45))
         screen.blit(info, (screen.get_width()//2 - info.get_width()//2, 100))
+
+        # Draw universal skill UI if player has special skills
+        try:
+            self.draw_universal_skill_ui(screen)
+        except Exception:
+            # Fallback: ignore if UI fails
+            pass
 
         # --- Pickup items ---
         # Pickup items (simple AABB)
