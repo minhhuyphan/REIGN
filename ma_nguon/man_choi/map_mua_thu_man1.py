@@ -163,6 +163,20 @@ class MapMuaThuMan1Scene(BaseMapScene):
         if self.handle_universal_skill_input(event):
             return  # Skill was handled
 
+    def spawn_next_boss(self):
+        """Spawn boss tiếp theo"""
+        if self.current_boss_index < len(self.bosses):
+            self.current_boss = self.bosses[self.current_boss_index]
+            self.current_boss_index += 1
+            print(f"[MAP_MUA_THU_1] Spawned boss {self.current_boss_index}/{len(self.bosses)}")
+        else:
+            self.current_boss = None
+            # Kiểm tra xem đã tiêu diệt tất cả kẻ địch chưa
+            if not self.normal_enemies:
+                # Chuyển sang màn tiếp theo
+                print("[MAP_MUA_THU_1] All enemies defeated! Victory!")
+                self.all_enemies_defeated = True
+
     def update(self):
         # Update skill video if showing
         # Universal skill system update
