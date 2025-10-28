@@ -127,6 +127,8 @@ class Character:
         self.action_type = ""
         self.jumping = False
         self.jump_vel = 0
+        self.jump_count = 0  # Track số lần nhảy (cho double jump)
+        self.max_jumps = 1   # Mặc định 1 lần nhảy
         self.running_sound_playing = False
         self.damaged = False
         self.defending = False
@@ -271,12 +273,19 @@ class Character:
         self.frame = 0
         self.damaged = False
 
-        if action_type == "nhay" and not self.jumping:
-            self.jumping = True
-            self.jump_vel = -12
-            if self.running_sound_playing and self.sound_run:
-                self.sound_run.stop()
-                self.running_sound_playing = False
+        # Xử lý nhảy với double jump support
+        if action_type == "nhay":
+            # Check if can jump (first jump OR has double jump ability)
+            can_jump = (self.jump_count == 0) or (self.jump_count < self.max_jumps and self.jumping)
+            
+            if can_jump:
+                self.jumping = True
+                self.jump_vel = -12
+                self.jump_count += 1
+                if self.running_sound_playing and self.sound_run:
+                    self.sound_run.stop()
+                    self.running_sound_playing = False
+        
         if action_type == "danh" and self.sound_punch:
             self.sound_punch.play()
         elif action_type == "da" and self.sound_kick:
@@ -393,6 +402,7 @@ class Character:
                     self.y = self.base_y
                     self.jumping = False
                     self.jump_vel = 0
+                    self.jump_count = 0  # Reset jump count when landing
                     self.actioning = False
                     self.action_type = ""
                     if keys and (self.controls.get("left") and keys[self.controls.get("left", pygame.K_LEFT)] or
@@ -765,6 +775,7 @@ class Character:
         self.damage = self.base_damage
         self.defense = self.base_defense
         self.speed = self.base_speed
+        self.max_jumps = 1  # Reset về 1 lần nhảy
         
         # Cộng tất cả bonus từ equipment
         for equipment in self.equipped.values():
@@ -773,6 +784,10 @@ class Character:
                 self.damage += equipment.attack_bonus
                 self.defense += equipment.defense_bonus
                 self.speed += equipment.speed_bonus
+                
+                # Check for double jump effect
+                if hasattr(equipment, 'has_double_jump') and equipment.has_double_jump:
+                    self.max_jumps = 2
         
         # Điều chỉnh HP hiện tại theo tỷ lệ
         if old_max_hp > 0:
