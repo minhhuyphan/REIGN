@@ -18,7 +18,12 @@ class Game:
         self.clock = pygame.time.Clock()
         self.screen = screen
         self.selected_player = None
-        self.target_level = "level1" 
+        self.target_level = "level1"
+        
+        # Multi-stage map settings
+        self.multi_stage_map = False
+        self.stage_selector_scene = None
+        
         # --- Camera và map ---
         self.camera_x = 0
         self.map_width = self.WIDTH * 3  # Map dài gấp 3 màn hình

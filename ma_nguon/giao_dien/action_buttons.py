@@ -171,17 +171,25 @@ class ActionButtonsUI:
         
         # Simulate key press for the player
         if key_action == "attack" and not player.actioning:
-            player.set_action("danh")
-            print("🥊 Tấn công!")
+            if hasattr(player, 'start_action'):
+                player.start_action("danh")
+                print("🥊 Tấn công!")
         elif key_action == "kick" and not player.actioning:
-            player.set_action("da")
-            print("🦵 Đá!")
+            if hasattr(player, 'start_action'):
+                player.start_action("da")
+                print("🦵 Đá!")
         elif key_action == "defend":
-            player.set_action("do")
-            print("🛡️ Phòng thủ!")
-        elif key_action == "jump" and not player.jumping:
-            player.jump()
-            print("🏃 Nhảy!")
+            if hasattr(player, 'start_action'):
+                player.start_action("do")
+                print("🛡️ Phòng thủ!")
+        elif key_action == "jump":
+            # Nhảy cần set cả jumping flag và action type
+            if hasattr(player, 'jumping') and not player.jumping:
+                player.jumping = True
+                player.actioning = True
+                player.action_type = "nhay"
+                player.jump_vel = -12  # Tốc độ nhảy (âm = lên trên)
+                print("🏃 Nhảy!")
         elif key_action == "health":
             self.use_health_potion(player)
         elif key_action == "energy":
@@ -195,29 +203,37 @@ class ActionButtonsUI:
     
     def use_health_potion(self, player):
         """Sử dụng bình máu"""
-        if hasattr(player, 'hp') and hasattr(player, 'max_hp'):
-            if player.hp < player.max_hp:
-                heal_amount = min(100, player.max_hp - player.hp)
-                player.hp += heal_amount
-                print(f"🩸 Sử dụng bình máu: +{heal_amount} HP")
-                # Set cooldown
+        if hasattr(player, 'use_health_potion'):
+            if player.use_health_potion():
+                print("🩸 Sử dụng bình máu thành công!")
                 self.cooldown_states["health"] = pygame.time.get_ticks() + 5000  # 5 second cooldown
             else:
-                print("❤️ Máu đã đầy!")
+                print("❌ Không có bình máu hoặc HP đã đầy!")
+        else:
+            print("⚠️ Nhân vật không hỗ trợ bình máu")
     
     def use_energy_potion(self, player):
-        """Sử dụng bình năng lượng"""
-        # Có thể implement energy system sau
-        print("⚡ Sử dụng bình năng lượng!")
-        self.cooldown_states["energy"] = pygame.time.get_ticks() + 3000  # 3 second cooldown
+        """Sử dụng bình năng lượng (mana)"""
+        if hasattr(player, 'use_mana_potion'):
+            if player.use_mana_potion():
+                print("⚡ Sử dụng bình năng lượng thành công!")
+                self.cooldown_states["energy"] = pygame.time.get_ticks() + 3000  # 3 second cooldown
+            else:
+                print("❌ Không có bình năng lượng hoặc mana đã đầy!")
+        else:
+            print("⚠️ Nhân vật không hỗ trợ bình năng lượng")
     
     def use_special_ability(self, player):
         """Sử dụng kỹ năng đặc biệt"""
-        if not player.actioning:
-            # Có thể implement special attacks
-            player.set_action("danh")  # Tạm thời dùng attack
-            print("🔫 Sử dụng kỹ năng bắn súng!")
-            self.cooldown_states["special"] = pygame.time.get_ticks() + 10000  # 10 second cooldown
+        if hasattr(player, 'use_skill'):
+            if player.can_use_skill() if hasattr(player, 'can_use_skill') else True:
+                player.use_skill()
+                print("� Sử dụng kỹ năng đặc biệt!")
+                self.cooldown_states["special"] = pygame.time.get_ticks() + 10000  # 10 second cooldown
+            else:
+                print("⏱️ Kỹ năng đang trong thời gian hồi!")
+        else:
+            print("⚠️ Nhân vật không có kỹ năng đặc biệt")
     
     def show_pause_menu(self):
         """Hiển thị menu pause"""

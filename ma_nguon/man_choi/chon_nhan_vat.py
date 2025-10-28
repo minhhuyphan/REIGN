@@ -105,14 +105,25 @@ class CharacterSelectScene:
                 user = getattr(self.game, 'current_user', None)
                 owned = False
                 if user:
-                    profile = profile_manager.load_profile(user)
-                    owned = cid in profile.get('purchased_characters', [])
+                    try:
+                        profile = profile_manager.load_profile(user)
+                        owned = cid in profile.get('purchased_characters', [])
+                    except Exception as e:
+                        print(f"[CHON_NV] Lỗi load profile: {e}")
+                        owned = False
                 else:
                     owned = (cur.get('price', 0) == 0)
 
                 if owned:
-                    self.confirm = True
-                    self._create_player()
+                    try:
+                        self.confirm = True
+                        self._create_player()
+                    except Exception as e:
+                        print(f"[CHON_NV] Lỗi khi tạo player: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        self.confirm = False
+                        self._set_message('Lỗi tạo nhân vật!', 180)
                 else:
                     # show hint and require shop purchase
                     self._set_message('khoá', 180)
@@ -131,7 +142,6 @@ class CharacterSelectScene:
                 self.selected_idx = clicked_char
                 # Double click to confirm
                 if hasattr(self, '_last_click_time') and hasattr(self, '_last_click_idx'):
-                    import time
                     current_time = time.time()
                     if current_time - self._last_click_time < 0.5 and self._last_click_idx == clicked_char:
                         # Double click detected - confirm selection
@@ -140,14 +150,25 @@ class CharacterSelectScene:
                         user = getattr(self.game, 'current_user', None)
                         owned = False
                         if user:
-                            profile = profile_manager.load_profile(user)
-                            owned = cid in profile.get('purchased_characters', [])
+                            try:
+                                profile = profile_manager.load_profile(user)
+                                owned = cid in profile.get('purchased_characters', [])
+                            except Exception as e:
+                                print(f"[CHON_NV] Lỗi load profile: {e}")
+                                owned = False
                         else:
                             owned = (cur.get('price', 0) == 0)
 
                         if owned:
-                            self.confirm = True
-                            self._create_player()
+                            try:
+                                self.confirm = True
+                                self._create_player()
+                            except Exception as e:
+                                print(f"[CHON_NV] Lỗi khi tạo player: {e}")
+                                import traceback
+                                traceback.print_exc()
+                                self.confirm = False
+                                self._set_message('Lỗi tạo nhân vật!', 180)
                         else:
                             self._set_message('khoá', 180)
                 
@@ -237,13 +258,25 @@ class CharacterSelectScene:
         # Lưu nhân vật đã chọn vào game
         self.game.selected_player = player
         
+        # Kiểm tra target_level có hợp lệ không
+        if not hasattr(self.game, 'target_level') or self.game.target_level is None:
+            print("[CHON_NV] Lỗi: target_level không được thiết lập, trở về menu")
+            self.game.change_scene("menu")
+            return
+        
         # Kiểm tra xem có phải multi-stage map không
         if hasattr(self.game, 'multi_stage_map') and self.game.multi_stage_map:
             # Chuyển sang màn chọn màn con (ví dụ: chọn màn mùa thu)
-            stage_selector = getattr(self.game, 'stage_selector_scene', self.game.target_level)
-            self.game.change_scene(stage_selector)
+            stage_selector = getattr(self.game, 'stage_selector_scene', None)
+            if stage_selector:
+                print(f"[CHON_NV] Chuyển sang stage selector: {stage_selector}")
+                self.game.change_scene(stage_selector)
+            else:
+                print("[CHON_NV] Lỗi: stage_selector_scene không tồn tại, chuyển sang target_level")
+                self.game.change_scene(self.game.target_level)
         else:
             # Chuyển thẳng vào màn chơi
+            print(f"[CHON_NV] Chuyển vào màn chơi: {self.game.target_level}")
             self.game.change_scene(self.game.target_level)
 
     def _ensure_selected_visible(self):
