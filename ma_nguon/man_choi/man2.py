@@ -185,6 +185,13 @@ class Level2Scene(BaseMapScene):
                     enemy.damaged = True
                     damaged_count += 1
                     print(f"[SKILL] Hit enemy at distance {distance:.0f}px, HP: {enemy.hp}")
+                    
+                    # Check if enemy died from skill damage
+                    if enemy.hp <= 0 and not enemy.dead:
+                        enemy.dead = True
+                        enemy.state = "nga"
+                        enemy.frame = 0
+                        enemy.knockback_speed = 5
         
         # Damage boss
         if self.current_boss and self.current_boss.hp > 0:
@@ -194,6 +201,14 @@ class Level2Scene(BaseMapScene):
                 self.current_boss.damaged = True
                 damaged_count += 1
                 print(f"[SKILL] Hit BOSS at distance {distance:.0f}px, HP: {self.current_boss.hp}")
+                
+                # Check if boss died from skill damage
+                if self.current_boss.hp <= 0 and not self.current_boss.dead:
+                    self.current_boss.dead = True
+                    self.current_boss.state = "nga"
+                    self.current_boss.frame = 0
+                    self.current_boss.knockback_speed = 5
+                    print(f"[SKILL] BOSS DEFEATED by skill!")
         
         print(f"[SKILL] Damaged {damaged_count} enemies!")
 
@@ -241,7 +256,7 @@ class Level2Scene(BaseMapScene):
         # Skill name (right of icon)
         name_x = icon_x + icon_size + 10
         name_y = ui_y + 8
-        skill_text = font.render("SKILL CHIẾN THẦN", True, (255, 215, 0))
+        skill_text = font.render("THẦN NỘ", True, (255, 215, 0))
         screen.blit(skill_text, (name_x, name_y))
         
         # Cooldown info (below name) - HIỂN THỊ THỜI GIAN HỒI CHIÊU

@@ -41,7 +41,8 @@ class GachaTrangBiScene:
             "common": (200, 200, 200),      # Xám
             "rare": (100, 200, 255),         # Xanh dương
             "epic": (200, 100, 255),         # Tím
-            "legendary": (255, 215, 0)       # Vàng
+            "legendary": (255, 215, 0),      # Vàng
+            "mythic": (255, 140, 0)          # Cam - Hiếm hơn Legendary
         }
         
         # Spin animation
@@ -52,10 +53,25 @@ class GachaTrangBiScene:
         self.background = self._create_gradient_background()
         
     def _get_gacha_pool(self):
-        """Tạo pool trang bị cho gacha với tỷ lệ rarity"""
+        """Tạo pool trang bị + nhân vật cho gacha với tỷ lệ rarity"""
         pool = []
         
-        # Tạo pool với tỷ lệ:
+        # Kiểm tra nhân vật đã có chưa
+        user = getattr(self.game, 'current_user', None)
+        purchased_characters = []
+        if user:
+            profile = profile_manager.load_profile(user)
+            purchased_characters = profile.get('purchased_characters', [])
+        
+        # Thêm nhân vật Vân Đao và Mị Ảnh với tỷ lệ 0.5% mỗi nhân vật (hiếm hơn vàng)
+        # CHỈ thêm vào pool nếu chưa có
+        if "van_dao" not in purchased_characters:
+            pool.append("CHARACTER:van_dao")  # Chỉ 1 lần = 0.5% trong pool 200 items
+        
+        if "mi_anh" not in purchased_characters:
+            pool.append("CHARACTER:mi_anh")  # Chỉ 1 lần = 0.5% trong pool 200 items
+        
+        # Tạo pool trang bị với tỷ lệ (tổng ~200 items):
         # Common: 60%
         # Rare: 30%
         # Epic: 8%
@@ -121,7 +137,7 @@ class GachaTrangBiScene:
         self.message = ""
     
     def _add_items_to_inventory(self):
-        """Thêm trang bị vào kho của người chơi"""
+        """Thêm trang bị và nhân vật vào kho của người chơi"""
         user = getattr(self.game, 'current_user', None)
         if not user:
             return
@@ -138,16 +154,29 @@ class GachaTrangBiScene:
                 new_inventory[item] = new_inventory.get(item, 0) + 1
             inventory = new_inventory
         
+        # Lấy danh sách nhân vật đã mua
+        purchased_characters = profile.get('purchased_characters', [])
+        
         # Add result items to inventory (có thể trùng lặp)
         for item_id in self.result_items:
-            inventory[item_id] = inventory.get(item_id, 0) + 1
+            # Kiểm tra nếu là nhân vật
+            if item_id.startswith("CHARACTER:"):
+                char_id = item_id.replace("CHARACTER:", "")
+                if char_id not in purchased_characters:
+                    purchased_characters.append(char_id)
+                    print(f"[GACHA] Mở khóa nhân vật mới: {char_id}")
+            else:
+                # Là trang bị
+                inventory[item_id] = inventory.get(item_id, 0) + 1
         
         profile['equipment_inventory'] = inventory
+        profile['purchased_characters'] = purchased_characters
         profile_manager.save_profile(user, profile)
         self.game.profile = profile
         
         print(f"[GACHA] Added {len(self.result_items)} items to inventory: {self.result_items}")
         print(f"[GACHA] Current inventory: {inventory}")
+        print(f"[GACHA] Purchased characters: {purchased_characters}")
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -284,8 +313,8 @@ class GachaTrangBiScene:
     def _draw_menu(self, screen):
         """Vẽ menu chính"""
         # Title
-        title = self.font_big.render("QUAY TRANG BỊ", True, (255, 215, 0))
-        title_shadow = self.font_big.render("QUAY TRANG BỊ", True, (50, 50, 50))
+        title = self.font_big.render("VÒNG QUAY", True, (255, 215, 0))
+        title_shadow = self.font_big.render("VÒNG QUAY", True, (50, 50, 50))
         screen.blit(title_shadow, (self.screen_width//2 - title.get_width()//2 + 3, 33))
         screen.blit(title, (self.screen_width//2 - title.get_width()//2, 30))
         
@@ -433,18 +462,32 @@ class GachaTrangBiScene:
             x = start_x + col * (card_width + gap)
             y = start_y + row * (card_height + gap)
             
-            # Get item data
-            item_data = EQUIPMENT_DATA.get(item_id, {})
-            rarity = item_data.get("rarity", "common")
-            name = item_data.get("name", item_id)
-            image_path = item_data.get("image_path", "")
-            equip_type = item_data.get("type", "")
+            # Kiểm tra nếu là nhân vật
+            is_character = item_id.startswith("CHARACTER:")
+            
+            if is_character:
+                # Xử lý nhân vật
+                char_id = item_id.replace("CHARACTER:", "")
+                character_names = {
+                    "van_dao": "Vân Đao",
+                    "mi_anh": "Mị Ảnh"
+                }
+                name = character_names.get(char_id, char_id)
+                rarity = "mythic"  # Nhân vật là Mythic (cam) - hiếm hơn Legendary
+                rarity_color = self.rarity_colors.get(rarity, (255, 140, 0))
+            else:
+                # Get item data (trang bị)
+                item_data = EQUIPMENT_DATA.get(item_id, {})
+                rarity = item_data.get("rarity", "common")
+                name = item_data.get("name", item_id)
+                image_path = item_data.get("image_path", "")
+                equip_type = item_data.get("type", "")
+                rarity_color = self.rarity_colors.get(rarity, (200, 200, 200))
             
             # Card background
             card_rect = pygame.Rect(x, y, card_width, card_height)
             
             # Rarity glow
-            rarity_color = self.rarity_colors.get(rarity, (200, 200, 200))
             for i in range(3):
                 offset = i * 3
                 glow_rect = card_rect.inflate(offset * 2, offset * 2)
@@ -457,8 +500,25 @@ class GachaTrangBiScene:
             pygame.draw.rect(screen, (40, 40, 60), card_rect, border_radius=10)
             pygame.draw.rect(screen, rarity_color, card_rect, 3, border_radius=10)
             
-            # Draw equipment image
-            if image_path:
+            # Draw image
+            if is_character:
+                # Vẽ ảnh nhân vật
+                char_id = item_id.replace("CHARACTER:", "")
+                char_img_path = f"tai_nguyen/hinh_anh/nhan_vat/{char_id}/dung_yen/0.png"
+                if os.path.exists(char_img_path):
+                    try:
+                        char_img = pygame.image.load(char_img_path).convert_alpha()
+                        img_size = 80
+                        char_img = pygame.transform.scale(char_img, (img_size, img_size))
+                        img_x = x + (card_width - img_size) // 2
+                        img_y = y + 30
+                        screen.blit(char_img, (img_x, img_y))
+                    except Exception:
+                        pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
+                else:
+                    pygame.draw.circle(screen, rarity_color, (x + card_width//2, y + 70), 30)
+            elif image_path:
+                # Draw equipment image
                 # Build full path
                 full_path = os.path.join("tai_nguyen", "hinh_anh", "trang_bi", image_path)
                 if not os.path.exists(full_path):
@@ -495,23 +555,28 @@ class GachaTrangBiScene:
                 screen.blit(line_surf, (x + card_width//2 - line_surf.get_width()//2, name_y))
                 name_y += 22
             
-            # Stats
-            stats_y = y + card_height - 50
-            stats_font = pygame.font.Font(None, 18)
-            
-            attack_bonus = item_data.get("attack_bonus", 0)
-            hp_bonus = item_data.get("hp_bonus", 0)
-            speed_bonus = item_data.get("speed_bonus", 0)
-            
-            if attack_bonus > 0:
-                stat_text = stats_font.render(f"+{attack_bonus} ATK", True, (255, 200, 100))
-                screen.blit(stat_text, (x + 10, stats_y))
-            elif hp_bonus > 0:
-                stat_text = stats_font.render(f"+{hp_bonus} HP", True, (100, 255, 100))
-                screen.blit(stat_text, (x + 10, stats_y))
-            elif speed_bonus > 0:
-                stat_text = stats_font.render(f"+{speed_bonus} SPD", True, (100, 200, 255))
-                screen.blit(stat_text, (x + 10, stats_y))
+            # Stats (chỉ hiển thị cho trang bị, không cho nhân vật)
+            if not is_character:
+                stats_y = y + card_height - 50
+                stats_font = pygame.font.Font(None, 18)
+                
+                attack_bonus = item_data.get("attack_bonus", 0)
+                hp_bonus = item_data.get("hp_bonus", 0)
+                speed_bonus = item_data.get("speed_bonus", 0)
+                
+                if attack_bonus > 0:
+                    stat_text = stats_font.render(f"+{attack_bonus} ATK", True, (255, 200, 100))
+                    screen.blit(stat_text, (x + 10, stats_y))
+                elif hp_bonus > 0:
+                    stat_text = stats_font.render(f"+{hp_bonus} HP", True, (100, 255, 100))
+                    screen.blit(stat_text, (x + 10, stats_y))
+                elif speed_bonus > 0:
+                    stat_text = stats_font.render(f"+{speed_bonus} SPD", True, (100, 200, 255))
+                    screen.blit(stat_text, (x + 10, stats_y))
+            else:
+                # Hiển thị label "NHÂN VẬT" cho character
+                char_label = self.font_small.render("NHÂN VẬT", True, rarity_color)
+                screen.blit(char_label, (x + card_width//2 - char_label.get_width()//2, y + card_height - 50))
             
             # Rarity badge
             rarity_text = self.font_small.render(rarity.upper(), True, rarity_color)

@@ -16,7 +16,7 @@ class ShopScene:
             { 'id': 'chien_binh', 'name': 'Chiến binh', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/chien_binh', 'price': 0 },
             { 'id': 'ninja', 'name': 'Ninja', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/ninja', 'price': 300 },
             { 'id': 'vo_si', 'name': 'Võ sĩ', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/vo_si', 'price': 400 },
-            { 'id': 'chien_than_lac_hong', 'name': 'Chiến Thần Lạc Hồng', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong', 'price': 500 },
+            { 'id': 'chien_than_lac_hong', 'name': 'Chiến Thần Lạc Hồng', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/chien_than_lac_hong', 'price': 100000000 },
             { 'id': 'tho_san_quai_vat', 'name': 'Thợ Săn Quái Vật', 'folder': 'tai_nguyen/hinh_anh/nhan_vat/tho_san_quai_vat', 'price': 350 }
         ]
 

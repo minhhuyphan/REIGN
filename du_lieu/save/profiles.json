@@ -81,35 +81,41 @@
     }
   },
   "phuc11": {
-    "gold": 55555555555534849,
+    "gold": 55555555555453413,
     "character_equipment": {
       "chien_binh": {
         "attack": "Kiếm Rồng",
         "defense": "Giáp Ánh Sáng"
       },
       "chien_than_lac_hong": {
-        "attack": "Kiếm Rồng",
-        "defense": "Giáp Ánh Sáng",
-        "speed": "Giay Phu Phep"
-      }
+        "speed": "Giày Thiên Thần"
+      },
+      "mi_anh": {}
     },
     "purchased_characters": [
       "chien_binh",
-      "chien_than_lac_hong"
+      "chien_than_lac_hong",
+      "vo_si",
+      "ninja",
+      "tho_san_quai_vat",
+      "mi_anh",
+      "van_dao"
     ],
     "equipment_inventory": {
-      "Ao Troang Bong Dem": 12,
-      "Kiếm Gỗ": 53,
-      "Giày Da": 60,
-      "Cung Gỗ": 60,
-      "Giay Da Boc Sat": 26,
-      "Giáp Sắt": 32,
-      "Giap Sat Bi Ri": 71,
-      "Nỏ Sét": 6,
-      "Kiếm Sắt": 17,
-      "Giay Phu Phep": 9,
-      "Kiếm Rồng": 2,
-      "Giáp Ánh Sáng": 2
+      "Ao Troang Bong Dem": 29,
+      "Kiếm Gỗ": 219,
+      "Giày Da": 203,
+      "Cung Gỗ": 203,
+      "Giay Da Boc Sat": 82,
+      "Giáp Sắt": 102,
+      "Giap Sat Bi Ri": 247,
+      "Nỏ Sét": 25,
+      "Kiếm Sắt": 89,
+      "Giay Phu Phep": 33,
+      "Kiếm Rồng": 11,
+      "Giáp Ánh Sáng": 8,
+      "Giày Thiên Thần": 3,
+      "Cung Băng Lãm": 4
     }
   }
 }
