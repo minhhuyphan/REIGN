@@ -1,6 +1,6 @@
 {
-  "vinh": {
-    "gold": 1251111111104423,
+  "phuc11": {
+    "gold": 9044,
     "purchased_characters": [
       "chien_binh",
       "ninja",
@@ -8,6 +8,7 @@
       "chien_than_lac_hong",
       "tho_san_quai_vat"
     ],
+
     "character_equipment": {
       "chien_binh": {
         "attack": "Cung Băng Lãm",
@@ -116,6 +117,10 @@
       "Giáp Ánh Sáng": 8,
       "Giày Thiên Thần": 3,
       "Cung Băng Lãm": 4
+
+    "equipment_inventory": {
+      "Kiếm Gỗ": 1
+
     }
   }
 }

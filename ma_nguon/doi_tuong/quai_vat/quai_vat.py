@@ -65,6 +65,13 @@ class QuaiVat:
         self.attack_cooldown = 800  # ms giữa 2 lần tấn công
         self.last_attack_time = 0
         
+        # Shooting ability
+        self.can_shoot = False  # Sẽ được set True khi spawn
+        self.last_shoot_time = 0
+        self.shoot_cooldown = 1000  # 1 giây = 1000ms
+        self.bullet_damage = 2
+        self.bullets = []  # Danh sách đạn của quái này
+        
         # Status effects
         self.is_slowed = False
         self.slow_end_time = 0
@@ -129,6 +136,19 @@ class QuaiVat:
         
         # Get effective speed (reduced if slowed)
         effective_speed = self.speed * 0.5 if self.is_slowed else self.speed
+        
+        # Shooting logic - chỉ bắn khi player trong phạm vi aggro_range
+        if self.can_shoot and target and not self.dead:
+            distance_to_target = abs(self.x - target.x)
+            # Chỉ bắn khi player trong phạm vi tấn công
+            if distance_to_target < self.aggro_range:
+                if now - self.last_shoot_time >= self.shoot_cooldown:
+                    # Tạo đạn bay về phía player
+                    self.shoot_bullet(target)
+                    self.last_shoot_time = now
+        
+        # Update bullets
+        self.update_bullets()
         
         # Reset damaged flag chỉ khi player THỰC SỰ dừng tấn công
         if target and hasattr(target, 'actioning') and hasattr(target, 'action_type'):
@@ -370,3 +390,53 @@ class QuaiVat:
                 ]
                 pygame.draw.polygon(screen, (100, 200, 255), points)
                 pygame.draw.polygon(screen, (200, 240, 255), points, 1)
+        
+        # Vẽ đạn
+        self.draw_bullets(screen, camera_x)
+    
+    def shoot_bullet(self, target):
+        """Bắn đạn về phía target"""
+        # Tính hướng bắn
+        dx = target.x - self.x
+        dy = (target.y + 40) - (self.y + 40)  # Aim at center of sprites
+        distance = (dx**2 + dy**2) ** 0.5
+        
+        if distance > 0:
+            # Normalize direction
+            vx = (dx / distance) * 8  # Tốc độ đạn
+            vy = (dy / distance) * 8
+            
+            # Tạo đạn
+            bullet = {
+                'x': self.x + 75,  # Từ giữa quái
+                'y': self.y + 40,
+                'vx': vx,
+                'vy': vy,
+                'damage': self.bullet_damage,
+                'color': (255, 100, 0)  # Màu cam
+            }
+            self.bullets.append(bullet)
+    
+    def update_bullets(self):
+        """Cập nhật vị trí đạn"""
+        bullets_to_keep = []
+        for bullet in self.bullets:
+            bullet['x'] += bullet['vx']
+            bullet['y'] += bullet['vy']
+            
+            # Giữ đạn nếu còn trong phạm vi hợp lý
+            if -100 < bullet['x'] < 10000 and -100 < bullet['y'] < 1000:
+                bullets_to_keep.append(bullet)
+        
+        self.bullets = bullets_to_keep
+    
+    def draw_bullets(self, screen, camera_x):
+        """Vẽ đạn"""
+        for bullet in self.bullets:
+            bullet_x = bullet['x'] - camera_x
+            bullet_y = bullet['y']
+            
+            # Vẽ đạn là hình tròn
+            pygame.draw.circle(screen, bullet['color'], (int(bullet_x), int(bullet_y)), 5)
+            # Viền sáng
+            pygame.draw.circle(screen, (255, 255, 150), (int(bullet_x), int(bullet_y)), 5, 1)

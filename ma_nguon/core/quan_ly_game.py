@@ -47,6 +47,27 @@ class Game:
         from ma_nguon.man_choi.intro_video import IntroVideoScene
         self.current_scene = IntroVideoScene(self)
 
+    def commit_session_gold(self):
+        """Gộp vàng nhặt trong phiên chơi vào hồ sơ người dùng và reset vàng phiên."""
+        try:
+            if not self.current_user or self.profile is None:
+                return
+            # Lấy vàng hiện có trên player (nếu đang trong màn chơi)
+            player_gold = 0
+            if hasattr(self, 'current_scene') and hasattr(self.current_scene, 'player') and self.current_scene.player:
+                player_gold = int(getattr(self.current_scene.player, 'gold', 0) or 0)
+            if player_gold > 0:
+                # Cộng vào profile
+                current = int(self.profile.get('gold', 0) or 0)
+                self.profile['gold'] = current + player_gold
+                # Reset vàng ở player để tránh cộng đôi khi đổi cảnh nhiều lần
+                try:
+                    self.current_scene.player.gold = 0
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[WARN] commit_session_gold failed: {e}")
+
     def save_current_profile(self):
         if not self.current_user or not self.profile:
             return
@@ -54,6 +75,9 @@ class Game:
 
     def change_scene(self, scene_name):
         from ma_nguon.man_choi.loading import LoadingScene
+        # Trước khi đổi cảnh, lưu vàng phiên hiện tại (nếu có) và lưu profile
+        self.commit_session_gold()
+        self.save_current_profile()
         if scene_name == "exit":
             self.running = False
         elif scene_name == "menu":
@@ -210,5 +234,11 @@ class Game:
                 self.draw_player_health_bar(self.screen, self.current_scene.player)
             
             pygame.display.flip()
+        # Lưu vàng và profile trước khi thoát game hoàn toàn
+        try:
+            self.commit_session_gold()
+            self.save_current_profile()
+        except Exception:
+            pass
         pygame.quit()
         sys.exit()

@@ -6,6 +6,7 @@ import traceback
 
 from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
+from ma_nguon.doi_tuong.quai_vat.quai_nho_type1 import QuaiNhoType1
 from ma_nguon.doi_tuong.quai_vat.quai_vat_manh import Boss1, Boss2, Boss3
 from ma_nguon.tien_ich.parallax import ParallaxBackground
 from ma_nguon.giao_dien.action_buttons import ActionButtonsUI
@@ -87,6 +88,11 @@ class MapCongNgheScene(BaseMapScene):
                 # Cập nhật damage cho môi trường công nghệ
                 self.player.damage = 18
                 self.player.kick_damage = 23
+                # Gán tham chiếu scene cho player để quái có thể drop item qua attacker.scene
+                try:
+                    self.player.scene = self
+                except Exception:
+                    pass
                 
                 # Load và apply equipment stats
                 load_and_apply_equipment(self.player, self.game, "MAP_CONG_NGHE")
@@ -128,25 +134,57 @@ class MapCongNgheScene(BaseMapScene):
             ]
 
             # Tạo enemies nhỏ - bọc try/except riêng để tiếp tục nếu một con lỗi
+            # Mix 2 loại quái: QuaiVat (không có số) và QuaiNhoType1 (có số 1)
+            # Tổng cộng 30 con quái: 15 con mỗi loại, phân bố đều
             total_enemies = 0
-            for group in range(3):
-                group_x = 700 + group * 900
-                num_enemies = random.randint(2, 3)
-                for i in range(num_enemies):
+            num_type1 = 0  # Đếm số quái type 1
+            num_type2 = 0  # Đếm số quái type 2
+            target_per_type = 15  # Mỗi loại 15 con
+            
+            # Tạo 6 groups, mỗi group có 5 quái (tổng 30 quái)
+            for group in range(6):
+                group_x = 700 + group * 700  # Giảm khoảng cách giữa các nhóm
+                num_enemies_in_group = 5
+                
+                for i in range(num_enemies_in_group):
                     try:
-                        x_pos = group_x + random.randint(-100, 100)
-                        enemy = QuaiVat(x_pos, 400, folder_qv, sound_qv, color=random.choice(tech_colors), damage=15)
-                        enemy.speed = 3.0
+                        x_pos = group_x + random.randint(-150, 150)
+                        # Tạo độ cao khác nhau để tránh chồng lên nhau
+                        # Quái type 1 (không số) bay cao hơn (y=320-360)
+                        # Quái type 2 (có số 1) ở mặt đất (y=400)
+                        
+                        # Spawn luân phiên giữa 2 loại để đảm bảo số lượng bằng nhau
+                        if num_type1 < target_per_type and (num_type2 >= target_per_type or (total_enemies % 2 == 0)):
+                            # Quái loại 1 (không có số) - bay cao hơn - CÓ BẮN ĐẠN
+                            y_pos = random.randint(320, 360)  # Cao hơn một chút
+                            enemy = QuaiVat(x_pos, y_pos, folder_qv, sound_qv, color=random.choice(tech_colors), damage=15)
+                            enemy.speed = 3.0
+                            enemy.hp = 150  # HP = 150
+                            enemy.base_y = y_pos  # Lưu vị trí y gốc
+                            enemy.can_shoot = True  # BẬT khả năng bắn đạn
+                            enemy.bullet_damage = 2  # Mỗi viên đạn gây 2 damage
+                            num_type1 += 1
+                        else:
+                            # Quái loại 2 (có số 1: chay1, danh1, etc.) - ở mặt đất
+                            y_pos = 400
+                            enemy = QuaiNhoType1(x_pos, y_pos, folder_qv, sound_qv, color=random.choice(tech_colors), damage=14)
+                            enemy.speed = 3.2
+                            enemy.hp = 150  # HP = 150
+                            enemy.max_hp = 150  # Cập nhật max HP để thanh máu hiển thị đúng
+                            enemy.base_y = y_pos  # Lưu vị trí y gốc
+                            num_type2 += 1
+                        
                         enemy.home_x = x_pos
                         enemy.patrol_range = 200
                         enemy.aggro_range = 400
-                        enemy.hp = int(getattr(enemy, "hp", 100) * 1.1)
                         enemy.damaged = False
                         self.normal_enemies.append(enemy)
                         total_enemies += 1
                     except Exception as e:
                         print(f"[WARNING] Lỗi tạo enemy ở group {group} idx {i}: {e}")
                         traceback.print_exc()
+            
+            print(f"[MAP_CONG_NGHE] Đã tạo {total_enemies} quái vật: {num_type1} QuaiVat + {num_type2} QuaiNhoType1")
 
             # Tạo boss - bọc try/except
             try:
@@ -190,15 +228,12 @@ class MapCongNgheScene(BaseMapScene):
 
             # ✨ KHỞI TẠO CÁC THUỘC TÍNH QUAN TRỌNG
             self.current_boss_index = 0
-            self.current_boss = None
+            self.current_boss = None  # Boss chưa spawn
             self.initial_enemy_count = total_enemies
             
-            # Spawn boss đầu tiên ngay lập tức để kiểm tra
+            # KHÔNG spawn boss ngay - chờ tiêu diệt hết 30 con quái nhỏ
             if self.bosses:
-                print(f"[DEBUG] Boss created: {len(self.bosses)} bosses available")
-                self.current_boss = self.bosses[0]
-                self.current_boss_index = 1
-                print(f"[DEBUG] Boss spawned at x={self.current_boss.x}, y={self.current_boss.y}")
+                print(f"[DEBUG] Boss created: {len(self.bosses)} bosses available - waiting for all enemies defeated")
             else:
                 print("[WARNING] No bosses created!")
 
@@ -342,12 +377,12 @@ class MapCongNgheScene(BaseMapScene):
         print(f"[SKILL] Damaged {damage_count} enemies!")
         
     def spawn_next_boss(self):
-        """Spawn boss tiếp theo"""
+        """Spawn boss tiếp theo - chỉ gọi sau khi tiêu diệt hết quái nhỏ"""
         if hasattr(self, 'current_boss_index') and hasattr(self, 'bosses'):
             if self.current_boss_index < len(self.bosses):
                 self.current_boss = self.bosses[self.current_boss_index]
                 self.current_boss_index += 1
-                print(f"[BOSS] Spawned boss {self.current_boss_index}")
+                print(f"[BOSS] ✨ Boss #{self.current_boss_index} spawned! (Đã tiêu diệt hết {self.initial_enemy_count} quái nhỏ)")
             else:
                 self.current_boss = None
                 print("[BOSS] All bosses defeated")
@@ -421,6 +456,16 @@ class MapCongNgheScene(BaseMapScene):
                     if getattr(enemy, "hp", 0) > 0:
                         enemy.update(target=self.player)
                         alive_enemies.append(enemy)
+                    else:
+                        # Thu thập vật phẩm rơi ra (nếu có) từ enemy.spawned_drops
+                        try:
+                            if hasattr(enemy, 'spawned_drops') and enemy.spawned_drops and not getattr(enemy, 'drops_collected', False):
+                                if not hasattr(self, 'items'):
+                                    self.items = []
+                                self.items.extend(enemy.spawned_drops)
+                                enemy.drops_collected = True
+                        except Exception:
+                            traceback.print_exc()
                 except Exception:
                     traceback.print_exc()
             self.normal_enemies = alive_enemies
@@ -511,6 +556,30 @@ class MapCongNgheScene(BaseMapScene):
                                     self.player.damaged = True
                                 except Exception:
                                     traceback.print_exc()
+                
+                # Check collision with enemy bullets
+                if hasattr(enemy, 'bullets') and enemy.bullets:
+                    bullets_to_keep = []
+                    for bullet in enemy.bullets:
+                        # Create bullet rect
+                        bullet_rect = pygame.Rect(int(bullet['x']) - 5, int(bullet['y']) - 5, 10, 10)
+                        
+                        # Check collision with player
+                        if rect_player.colliderect(bullet_rect):
+                            # Đạn trúng player - LUÔN gây damage (bỏ qua defense)
+                            try:
+                                # Trừ HP trực tiếp, bỏ qua defense (đạn xuyên giáp)
+                                self.player.hp -= bullet['damage']
+                                if self.player.sound_hit:
+                                    self.player.sound_hit.play()
+                                # Không giữ đạn này (đã va chạm)
+                            except Exception:
+                                traceback.print_exc()
+                        else:
+                            # Giữ đạn nếu chưa va chạm
+                            bullets_to_keep.append(bullet)
+                    
+                    enemy.bullets = bullets_to_keep
 
             # Collisions with boss (guarded)
             if self.current_boss and hasattr(self.current_boss, "image") and not getattr(self.current_boss, "dead", False):
@@ -689,6 +758,14 @@ class MapCongNgheScene(BaseMapScene):
         except Exception:
             traceback.print_exc()
 
+        # Vẽ vật phẩm rơi ra (vàng, bình máu/mana, ...)
+        try:
+            for item in getattr(self, 'items', []):
+                if hasattr(item, 'draw'):
+                    item.draw(screen, self.camera_x)
+        except Exception:
+            traceback.print_exc()
+
         # Vẽ các particle ở dưới cùng (mặt đất)
         try:
             for particle in self.tech_particles:
@@ -703,6 +780,12 @@ class MapCongNgheScene(BaseMapScene):
                 self.parallax_bg.draw_foreground_layers(screen, self.camera_x)
             except Exception:
                 traceback.print_exc()
+
+        # Vẽ đạn của người chơi (vẽ sau foreground để luôn nhìn thấy)
+        try:
+            bullet_handler.draw_bullets(self.player, screen, self.camera_x)
+        except Exception:
+            traceback.print_exc()
 
         # Vẽ thanh máu hoặc UI liên quan đến player nếu game cung cấp
         if hasattr(self.game, 'draw_player_health_bar'):
@@ -788,5 +871,5 @@ class MapCongNgheScene(BaseMapScene):
             
             screen.blit(ready_text, (status_x, status_y))
 
-        bullet_handler.draw_bullets(self.player, screen, self.camera_x)
+    # Việc vẽ đạn được thực hiện trực tiếp trong draw() nên không cần vẽ ở đây nữa
 
