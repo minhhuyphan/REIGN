@@ -6,7 +6,9 @@
     ]
   },
   "huy": {
-    "gold": 9966802,
+
+    "gold": 2989899940914,
+
     "purchased_characters": [
       "chien_binh",
       "tho_san_quai_vat",
@@ -29,11 +31,6 @@
       "Giày Thiên Thần": 3,
       "Nỏ Sét": 9
     }
-  },
-  "phuc": {
-    "gold": 3088,
-    "purchased_characters": [
-      "chien_binh"
-    ]
+
   }
 }

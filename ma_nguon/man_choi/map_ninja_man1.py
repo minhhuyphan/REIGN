@@ -125,6 +125,8 @@ class mapninjaman1Scene(BaseMapScene):
         sound_qv = os.path.join("Tai_nguyen", "am_thanh", "hieu_ung")
 
         self.normal_enemies = []
+        # Items dropped on the ground
+        self.items = []
         
         # Skill video system
         self.skill_video = None
@@ -433,7 +435,19 @@ class mapninjaman1Scene(BaseMapScene):
                 if enemy.hp > 0:
                     # Cập nhật AI quái vật với vùng hoạt động
                     enemy.update(target=self.player)
+                    
+                    # Reset enemy damaged flag khi không còn tấn công
+                    if not enemy.attacking:
+                        enemy.damaged = False
+                    
                     alive_enemies.append(enemy)
+                else:
+                    # Nếu quái vừa chết và có drops, thu thập chúng vào scene
+                    if hasattr(enemy, 'spawned_drops') and enemy.spawned_drops:
+                        for it in enemy.spawned_drops:
+                            self.items.append(it)
+                            print(f"[DEBUG] Collected drop into scene: {type(it).__name__} at ({it.x},{it.y})")
+                        enemy.spawned_drops = []
             self.normal_enemies = alive_enemies
 
             # Spawn boss khi hết quái
@@ -460,6 +474,17 @@ class mapninjaman1Scene(BaseMapScene):
             # Boss update
             if self.current_boss and not self.current_boss.dead:
                 self.current_boss.update(target=self.player)
+                
+                # Reset boss damaged flag khi không còn tấn công
+                if not self.current_boss.attacking:
+                    self.current_boss.damaged = False
+            elif self.current_boss and self.current_boss.dead:
+                # Thu thập drops từ boss khi chết
+                if hasattr(self.current_boss, 'spawned_drops') and self.current_boss.spawned_drops:
+                    for it in self.current_boss.spawned_drops:
+                        self.items.append(it)
+                        print(f"[DEBUG] Collected boss drop into scene: {type(it).__name__} at ({it.x},{it.y})")
+                    self.current_boss.spawned_drops = []
 
             # Reset player damaged flag dựa trên trạng thái của tất cả enemies
             any_enemy_attacking = any(enemy.attacking and enemy.state in ["danh", "da"] for enemy in self.normal_enemies)
@@ -538,6 +563,29 @@ class mapninjaman1Scene(BaseMapScene):
                                     boss_damage = self.current_boss.get_current_damage()
                                 self.player.take_damage(boss_damage, self.current_boss.flip)
                                 self.player.damaged = True
+            
+            # --- Pickup items ---
+            remaining_items = []
+            for item in self.items:
+                if item.picked:
+                    continue
+                # simple pickup AABB check with player
+                item_rect = pygame.Rect(item.x, item.y, 24, 24)
+                player_rect = pygame.Rect(self.player.x, self.player.y, 50, 80)
+                if player_rect.colliderect(item_rect):
+                    item.on_pickup(self.player)
+                    # Trigger HUD pickup animation
+                    if hasattr(self, 'action_buttons'):
+                        if type(item).__name__ == 'Gold':
+                            self.action_buttons.trigger_pickup_animation('gold', getattr(item, 'amount', 0))
+                        elif type(item).__name__ in ('HealthPotion', 'Health_Potion', 'HealthPotion'):
+                            self.action_buttons.trigger_pickup_animation('hp', 1)
+                        elif type(item).__name__ in ('ManaPotion', 'Mana_Potion', 'ManaPotion'):
+                            self.action_buttons.trigger_pickup_animation('mp', 1)
+                else:
+                    remaining_items.append(item)
+            self.items = remaining_items
+            
             # Cập nhật đạn (bullet) và Sasuke skill system
             from ma_nguon.tien_ich import bullet_handler
             
@@ -635,6 +683,10 @@ class mapninjaman1Scene(BaseMapScene):
             # Chỉ vẽ quái vật trong tầm nhìn camera
             if enemy.x + 150 >= self.camera_x and enemy.x - 150 <= self.camera_x + self.game.WIDTH:
                 enemy.draw(screen, self.camera_x)
+
+        # Vẽ items rơi (với camera offset)
+        for item in self.items:
+            item.draw(screen, self.camera_x)
 
         # Vẽ boss (với camera offset)
         if self.current_boss:
