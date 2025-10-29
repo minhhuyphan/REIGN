@@ -171,6 +171,8 @@ class EquipmentManager:
         if "revive" in effects:
             eq.has_revive_effect = True
             eq.revive_hp_percent = 50
+        if "double_jump" in effects:
+            eq.has_double_jump = True
         
         return eq
         
@@ -186,10 +188,17 @@ class EquipmentManager:
         """Lấy trang bị chưa được trang bị"""
         return [eq for eq in self.all_equipment if eq.equipped_to is None]
     
-    def get_equipment_by_name(self, name):
-        """Lấy equipment theo tên"""
+    def get_equipment_by_name(self, name, only_available=False):
+        """Lấy equipment theo tên
+        
+        Args:
+            name: Tên equipment cần tìm
+            only_available: Nếu True, chỉ trả về equipment chưa được trang bị
+        """
         for eq in self.all_equipment:
             if eq.name == name:
+                if only_available and eq.equipped_to is not None:
+                    continue
                 return eq
         return None
         
