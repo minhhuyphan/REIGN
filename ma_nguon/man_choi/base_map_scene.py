@@ -239,3 +239,30 @@ class BaseMapScene:
                     max_time = max(info['remaining_time'] for info in clone_info)
                     time_text = font_small.render(f"Thời gian: {max_time:.1f}s", True, (150, 200, 255))
                     screen.blit(time_text, (ui_x + 150, clone_ui_y + 8))
+    
+    def trigger_victory(self, level_name="Unknown"):
+        """Kích hoạt màn hình victory với tính điểm tự động"""
+        # Tính điểm dựa trên player stats
+        score = 0
+        stats = {}
+        
+        if hasattr(self, 'player') and self.player:
+            # Điểm cơ bản từ gold
+            score += getattr(self.player, 'gold', 0) * 10
+            
+            # Bonus từ HP còn lại
+            hp_bonus = int((self.player.hp / self.player.max_hp) * 500)
+            score += hp_bonus
+            
+            # Stats
+            stats['hp_remaining'] = f"{self.player.hp}/{self.player.max_hp}"
+            
+        # Điểm từ enemies defeated (nếu có track)
+        if hasattr(self, 'initial_enemy_count'):
+            enemies_defeated = self.initial_enemy_count - len(getattr(self, 'normal_enemies', []))
+            score += enemies_defeated * 100
+            stats['enemies_defeated'] = enemies_defeated
+        
+        # Gọi show_victory với thông tin đầy đủ
+        if hasattr(self, 'game'):
+            self.game.show_victory(level_name, score, stats)

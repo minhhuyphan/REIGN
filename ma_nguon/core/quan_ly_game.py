@@ -77,6 +77,19 @@ class Game:
         if not self.current_user or not self.profile:
             return
         profile_manager.save_profile(self.current_user, self.profile)
+    
+    def show_victory(self, level_name="Unknown", score=0, stats=None):
+        """Hiển thị màn hình victory với thông tin cụ thể"""
+        self.victory_level_name = level_name
+        self.victory_score = score
+        self.victory_stats = stats
+        self.change_scene("victory")
+    
+    def show_game_over(self, level_name="Unknown", score=0):
+        """Hiển thị màn hình game over với thông tin cụ thể"""
+        self.game_over_level_name = level_name
+        self.game_over_score = score
+        self.change_scene("game_over")
 
     def change_scene(self, scene_name):
         from ma_nguon.man_choi.loading import LoadingScene
@@ -100,12 +113,10 @@ class Game:
             self.current_scene = ChonMapScene(self)
         elif scene_name == "game_over":
             # Chuyển trực tiếp đến Game Over mà không qua Loading
-            if hasattr(self, 'game_over_scene'):
-                self.current_scene = self.game_over_scene
-            else:
-                # Fallback nếu không có scene được tạo trước
-                from ma_nguon.man_choi.game_over import GameOverScene
-                self.current_scene = GameOverScene(self, "Unknown", 0)
+            from ma_nguon.man_choi.game_over import GameOverScene
+            level_name = getattr(self, 'game_over_level_name', 'Unknown')
+            score = getattr(self, 'game_over_score', 0)
+            self.current_scene = GameOverScene(self, level_name, score)
         else:
             # Luôn dùng LoadingScene để chuyển tiếp
             self.current_scene = LoadingScene(self, scene_name)

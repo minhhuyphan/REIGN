@@ -29,5 +29,11 @@
       "Giày Thiên Thần": 3,
       "Nỏ Sét": 9
     }
+  },
+  "phuc": {
+    "gold": 3088,
+    "purchased_characters": [
+      "chien_binh"
+    ]
   }
 }

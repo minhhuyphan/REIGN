@@ -111,7 +111,11 @@ class LoadingScene:
         elif self.target_scene == "help":
             self.game.current_scene = HelpScene(self.game)
         elif self.target_scene == "victory":
-            self.game.current_scene = VictoryScene(self.game)
+            # Get victory info from game object (set by the level before calling victory)
+            level_name = getattr(self.game, 'victory_level_name', 'Unknown')
+            score = getattr(self.game, 'victory_score', 0)
+            stats = getattr(self.game, 'victory_stats', None)
+            self.game.current_scene = VictoryScene(self.game, level_name, score, stats)
 
         elif self.target_scene == "settings":
             self.game.current_scene = SettingsScene(self.game)

@@ -420,8 +420,8 @@ class MapCongNgheScene(BaseMapScene):
                     except Exception:
                         traceback.print_exc()
 
-                    # Finally change to victory scene (Game.change_scene will commit session gold)
-                    self.game.change_scene("victory")
+                    # Finally change to victory scene
+                    self.trigger_victory("Map Công Nghệ")
         else:
             print("[ERROR] Boss system not properly initialized")
 
