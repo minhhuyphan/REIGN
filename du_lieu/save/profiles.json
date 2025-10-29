@@ -6,9 +6,7 @@
     ]
   },
   "huy": {
-
     "gold": 2989899940914,
-
     "purchased_characters": [
       "chien_binh",
       "tho_san_quai_vat",
@@ -31,6 +29,19 @@
       "Giày Thiên Thần": 3,
       "Nỏ Sét": 9
     }
-
+  },
+  "vinh": {
+    "gold": 92,
+    "purchased_characters": [
+      "chien_binh"
+    ],
+    "equipment_inventory": {
+      "Giày Da": 3,
+      "Giáp Sắt": 1,
+      "Kiếm Sắt": 5,
+      "Cung Gỗ": 3,
+      "Kiếm Gỗ": 2,
+      "Giap Sat Bi Ri": 1
+    }
   }
 }

@@ -55,6 +55,10 @@ class MapRungLinhVucScene:
         # Skill video system
         self.skill_video = None
         self.showing_skill_video = False
+        
+        # Track initial enemy count for scoring
+        total_enemies = 0
+        
         for i in range(15):  # Tăng số lượng quái vật
             x_pos = 600 + i * 300  # Đặt quái vật dọc theo map dài
             enemy = QuaiVat(x_pos, 300, folder_qv, sound_qv, color=(255,0,0), damage=10)
@@ -63,6 +67,10 @@ class MapRungLinhVucScene:
             enemy.patrol_range = 200  # Khoảng cách di chuyển tối đa từ home_x
             enemy.aggro_range = 300   # Khoảng cách phát hiện và tấn công người chơi
             self.normal_enemies.append(enemy)
+            total_enemies += 1
+        
+        # Lưu số lượng quái ban đầu để tính điểm
+        self.initial_enemy_count = total_enemies
         # Khởi tạo boss
         self.bosses = [
             Boss1(self.game.map_width - 800, 300, folder_qv, sound_qv),
@@ -148,8 +156,18 @@ class MapRungLinhVucScene:
             self.current_boss = None
             # Kiểm tra xem đã tiêu diệt tất cả kẻ địch chưa
             if not self.normal_enemies:
-                # Chuyển sang màn 2
-                self.game.change_scene("level2")
+                # Tính điểm: Đếm số boss đã chết * 1000 + quái thường đã giết * 100
+                bosses_killed = len([b for b in self.bosses if b.dead])
+                enemies_killed = self.initial_enemy_count - len(self.normal_enemies)
+                score = bosses_killed * 1000 + enemies_killed * 100
+                
+                print(f"[VICTORY] Bosses killed: {bosses_killed}, Enemies killed: {enemies_killed}, Total score: {score}")
+                
+                # Set victory info để LoadingScene có thể đọc
+                self.game.victory_level_name = "Map Rừng Linh Vực"
+                self.game.victory_score = score
+                self.game.victory_stats = None
+                self.game.change_scene("victory")
 
     def play_cutscene(self, video_path):
         """Play cutscene video before boss spawn"""
