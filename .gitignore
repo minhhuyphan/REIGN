@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual env
+.venv/
+venv/
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# PyInstaller
+*.exe
+
+# Pygame / assets - keep assets tracked but ignore save game data
+du_lieu/save/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db

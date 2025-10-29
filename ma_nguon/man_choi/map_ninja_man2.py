@@ -326,7 +326,7 @@ class mapninjaman2Scene(BaseMapScene):
                     self.play_final_boss_video()
                 else:
                     # Victory - chuyển màn
-                    self.game.change_scene("victory")
+                    self.trigger_victory("Map Ninja - Màn 2")
 
     def play_final_boss_video(self):
         """Phát video final boss như màn 1 phát skill video"""

@@ -468,7 +468,7 @@ class mapninjaman1Scene(BaseMapScene):
                         return
                     except Exception:
                         # Nếu có lỗi khi chuyển, fallback sang victory để không block game
-                        self.game.change_scene("victory")
+                        self.trigger_victory("Map Ninja - Màn 1")
                         return
 
             # Boss update

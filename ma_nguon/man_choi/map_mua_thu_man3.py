@@ -541,5 +541,5 @@ class MapMuaThuMan3Scene(BaseMapScene):
             if not hasattr(self, 'victory_triggered') or not self.victory_triggered:
                 print("[VICTORY] All enemies defeated!")
                 self.victory_triggered = True
-                self.game.change_scene("victory")
+                self.trigger_victory("Mùa Thu - Màn 3")
 
