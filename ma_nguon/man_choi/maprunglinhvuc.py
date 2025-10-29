@@ -2,6 +2,7 @@ import pygame
 import os
 import random
 import math
+from moviepy import VideoFileClip
 
 from ma_nguon.doi_tuong.nhan_vat.nhan_vat import Character
 from ma_nguon.doi_tuong.quai_vat.quai_vat import QuaiVat
@@ -149,6 +150,14 @@ class MapRungLinhVucScene:
             if not self.normal_enemies:
                 # Chuyển sang màn 2
                 self.game.change_scene("level2")
+
+    def play_cutscene(self, video_path):
+        """Play cutscene video before boss spawn"""
+        self.showing_cutscene = True
+        self.cutscene_done = False
+        self.cutscene_clip = VideoFileClip(video_path)
+        self.clip_duration = self.cutscene_clip.duration
+        self.clip_start_time = pygame.time.get_ticks()
 
 
     
@@ -388,7 +397,17 @@ class MapRungLinhVucScene:
             screen.fill((0, 0, 0))  # Black background
             self.skill_video.draw(screen)
             return  # Don't draw game elements during skill video
-                # Vẽ các lớp nền phía sau (từ xa đến gần)
+        
+        # If showing cutscene, render cutscene video
+        if self.showing_cutscene and self.cutscene_clip:
+            now = pygame.time.get_ticks()
+            elapsed = (now - self.clip_start_time) / 1000.0
+            frame = self.cutscene_clip.get_frame(elapsed)
+            frame_surface = pygame.surfarray.make_surface(frame.swapaxes(0,1))
+            screen.blit(pygame.transform.scale(frame_surface, screen.get_size()), (0,0))
+            return
+        
+        # Vẽ các lớp nền phía sau (từ xa đến gần)
         self.parallax_bg.draw_background_layers(screen, self.camera_x)
         
         # Vẽ hiệu ứng lá rơi (với camera offset)

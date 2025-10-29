@@ -172,10 +172,13 @@ class MapMuaThuMan1Scene(BaseMapScene):
         else:
             self.current_boss = None
             # Kiểm tra xem đã tiêu diệt tất cả kẻ địch chưa
-            if not self.normal_enemies:
+            if not self.normal_enemies and not self.all_enemies_defeated:
                 # Chuyển sang màn tiếp theo
-                print("[MAP_MUA_THU_1] All enemies defeated! Victory!")
+                print("[MAP_MUA_THU_1] All enemies defeated! Moving to next stage...")
                 self.all_enemies_defeated = True
+                # Delay nhỏ trước khi chuyển màn
+                pygame.time.wait(1000)
+                self.game.change_scene("map_mua_thu_man2")
 
     def update(self):
         # Update skill video if showing
